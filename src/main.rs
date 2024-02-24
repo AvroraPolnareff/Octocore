@@ -1,8 +1,7 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
-use fundsp::hacker::{hammond_hz, multipass, reverb_stereo, sine, sine_hz, soft_saw_hz, square_hz, wave64, Wave64, square, saw_hz, lfo, Shared, var, triangle, shared};
+use fundsp::hacker::{Shared, var, triangle, shared};
 use fundsp::prelude::{adsr_live, AudioUnit64};
-use std::sync::Arc;
 use anyhow::bail;
 use fundsp::math::midi_hz;
 use midi_msg::{ChannelVoiceMsg, MidiMsg};
@@ -17,7 +16,7 @@ fn main() -> anyhow::Result<()> {
     let volume = shared(0.0);
     let pitch_bend = shared(0.0);
     let control = shared(0.0);
-    
+
     run_output(
         pitch.clone(),
         volume.clone(),
@@ -25,8 +24,8 @@ fn main() -> anyhow::Result<()> {
         control.clone()
     );
     run_input(midi_in, in_port, pitch, volume, pitch_bend, control)
-    
-    
+
+
 }
 
 fn create_sound(
