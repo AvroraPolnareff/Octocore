@@ -1,6 +1,6 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
-use fundsp::hacker::{Shared, var, triangle, shared};
+use fundsp::hacker::{Shared, var, triangle, shared, sine_hz, sine};
 use fundsp::prelude::{adsr_live, AudioUnit64};
 use anyhow::bail;
 use fundsp::math::midi_hz;
@@ -34,9 +34,17 @@ fn create_sound(
     pitch_bend: Shared<f64>,
     control: Shared<f64>
 ) -> Box<dyn AudioUnit64> {
+    let bf = || var(&pitch) * var(&pitch_bend);
+    let ratio = 2.0;
+    let modulator_index = 5.0;
+    let modulator = bf() * ratio
+        >> sine() * (var(&control) >> adsr_live(0.0, 0.2, 0.0, 0.2))
+        * modulator_index;
+    let base_tone =
+        modulator * bf() + bf() >> sine();
+    
     Box::new(
-        var(&pitch_bend) * var(&pitch)
-            >> triangle() * (var(&control) >> adsr_live(0.1, 0.2, 0.4, 0.2) * var(&volume))
+        base_tone * (var(&control) >> adsr_live(0.1, 0.2, 0.4, 0.2) * var(&volume))
     )
 }
 
@@ -84,6 +92,9 @@ fn run_input(
                                 control.set_value(-1.0)
                             }
                         }
+                        ChannelVoiceMsg::PitchBend { bend } => {
+                            pitch_bend.set_value(pitch_bend_factor(bend))
+                        }
                         _ => {}
                     }
                 }
@@ -95,6 +106,10 @@ fn run_input(
     let _ = input::<String>().msg("press enter to exit...\n").get();
     println!("Closing connection");
     Ok(())
+}
+
+fn pitch_bend_factor(bend: u16) -> f64 {
+    2.0_f64.powf(((bend as f64 - 8192.0) / 8182.0) / 12.0)
 }
 
 fn run_output(
