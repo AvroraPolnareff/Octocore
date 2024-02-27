@@ -3,6 +3,19 @@
 version = 3
 
 [[package]]
+name = "Octocore"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cpal",
+ "fundsp",
+ "midi-msg",
+ "midi_fundsp",
+ "midir",
+ "read_input",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1578,17 +1591,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "wt-synth"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cpal",
- "fundsp",
- "midi-msg",
- "midi_fundsp",
- "midir",
- "read_input",
 ]
