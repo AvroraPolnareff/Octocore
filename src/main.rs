@@ -1,48 +1,46 @@
+mod r#voice_params;
+
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
-use fundsp::hacker::{Shared, var, triangle, shared, sine_hz, sine};
+use fundsp::hacker::{var, sine};
 use fundsp::prelude::{adsr_live, AudioUnit64};
 use anyhow::bail;
 use fundsp::math::midi_hz;
 use midi_msg::{ChannelVoiceMsg, MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::*;
+use crate::voice_params::VoiceParams;
+
+
 fn main() -> anyhow::Result<()> {
 
     let mut midi_in = MidiInput::new("midir reading input")?;
     let in_port = get_midi_device(&mut midi_in)?;
-
-    let pitch = shared(0.0);
-    let volume = shared(0.0);
-    let pitch_bend = shared(0.0);
-    let control = shared(0.0);
+    
+    let voice_params= VoiceParams::default();
 
     run_output(
-        pitch.clone(),
-        volume.clone(),
-        pitch_bend.clone(),
-        control.clone()
+        voice_params.clone()
     );
-    run_input(midi_in, in_port, pitch, volume, pitch_bend, control)
+    run_input(midi_in, in_port, voice_params)
 }
 
 fn create_sound(
-    pitch: Shared<f64>,
-    volume: Shared<f64>,
-    pitch_bend: Shared<f64>,
-    control: Shared<f64>
+    voice_params: &VoiceParams
 ) -> Box<dyn AudioUnit64> {
-    let bf = || var(&pitch) * var(&pitch_bend);
+    let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
     let ratio = 2.0;
     let modulator_index = 5.0;
     let modulator = bf() * ratio
-        >> sine() * (var(&control) >> adsr_live(0.0, 0.2, 0.0, 0.2))
+        >> sine() * (var(&voice_params.control) >> adsr_live(0.01, 0.2, 0.0, 0.2))
         * modulator_index;
     let base_tone =
         modulator * bf() + bf() >> sine();
     
     Box::new(
-        base_tone * (var(&control) >> adsr_live(0.1, 0.2, 0.4, 0.2) * var(&volume))
+        base_tone * (var(&voice_params.control)
+            >> adsr_live(0.1, 0.2, 0.4, 0.2) * var(&voice_params.volume)
+        )
     )
 }
 
@@ -63,10 +61,7 @@ fn get_midi_device(midi_in: &mut MidiInput) -> anyhow::Result<MidiInputPort> {
 fn run_input(
     midi_in: MidiInput,
     in_port: MidiInputPort,
-    pitch: Shared<f64>,
-    volume: Shared<f64>,
-    pitch_bend: Shared<f64>,
-    control: Shared<f64>,
+    voice_params: VoiceParams,
 ) -> anyhow::Result<()> {
     println!("\nOpening connection");
     let in_port_name = midi_in.port_name(&in_port)?;
@@ -80,18 +75,18 @@ fn run_input(
                     println!("Received {msg:?}");
                     match msg {
                         ChannelVoiceMsg::NoteOn { note, velocity } => {
-                            pitch.set_value(midi_hz(note as f64));
-                            volume.set_value(velocity as f64 / 127.0);
-                            pitch_bend.set_value(1.0);
-                            control.set_value(1.0);
+                            voice_params.pitch.set_value(midi_hz(note as f64));
+                            voice_params.volume.set_value(velocity as f64 / 127.0);
+                            voice_params.pitch_bend.set_value(1.0);
+                            voice_params.control.set_value(1.0);
                         }
                         ChannelVoiceMsg::NoteOff { note, velocity: _ } => {
-                            if pitch.value() == midi_hz(note as f64) {
-                                control.set_value(-1.0);
+                            if voice_params.pitch.value() == midi_hz(note as f64) {
+                                voice_params.control.set_value(-1.0);
                             }
                         }
                         ChannelVoiceMsg::PitchBend { bend } => {
-                            pitch_bend.set_value(pitch_bend_factor(bend));
+                            voice_params.pitch_bend.set_value(pitch_bend_factor(bend));
                         }
                         _ => {}
                     }
@@ -112,10 +107,7 @@ fn pitch_bend_factor(bend: u16) -> f64 {
 }
 
 fn run_output(
-    pitch: Shared<f64>,
-    volume: Shared<f64>,
-    pitch_bend: Shared<f64>,
-    control: Shared<f64>,
+    voice_params: VoiceParams,
 ) {
     let host = cpal::default_host();
     let device = host
@@ -124,29 +116,26 @@ fn run_output(
     let config = device.default_output_config().unwrap();
     match config.sample_format() {
         SampleFormat::F32 => {
-            run_synth::<f32>(pitch, volume, pitch_bend, control, device, config.into())
+            run_synth::<f32>(voice_params, device, config.into())
         }
         SampleFormat::I16 => {
-            run_synth::<i16>(pitch, volume, pitch_bend, control, device, config.into())
+            run_synth::<i16>(voice_params, device, config.into())
         }
         SampleFormat::U16 => {
-            run_synth::<u16>(pitch, volume, pitch_bend, control, device, config.into())
+            run_synth::<u16>(voice_params, device, config.into())
         }
         _ => panic!("Unsupported format"),
     }
 }
 
 fn run_synth<T: SizedSample + FromSample<f64>>(
-    pitch: Shared<f64>,
-    volume: Shared<f64>,
-    pitch_bend: Shared<f64>,
-    control: Shared<f64>,
+    voice_params: VoiceParams,
     device: Device,
     config: StreamConfig,
 ) {
     std::thread::spawn(move || {
         let sample_rate = config.sample_rate.0 as f64;
-        let mut sound = create_sound(pitch, volume, pitch_bend, control);
+        let mut sound = create_sound(&voice_params);
         sound.set_sample_rate(sample_rate);
 
         let mut next_value = move || sound.get_stereo();
