@@ -1,5 +1,6 @@
 mod r#voice_params;
 mod graphix;
+mod push;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
@@ -11,11 +12,13 @@ use midi_msg::{ChannelVoiceMsg, MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::*;
 use crate::graphix::render_file;
+use crate::push::draw_image;
 use crate::voice_params::VoiceParams;
 
 
 fn main() -> anyhow::Result<()> {
-    render_file();
+    let pixels = render_file();
+    draw_image(&pixels);
 
     let mut midi_in = MidiInput::new("midir reading input")?;
     let in_port = get_midi_device(&mut midi_in)?;
