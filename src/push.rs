@@ -20,8 +20,15 @@ pub fn draw_image (image: &[u8]) {
         }).expect("Ableton push 2 is not connected");
     let mut device_handle = device.open().expect("Error while opening a device connection");
     device_handle.claim_interface(0).unwrap();
-    device_handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(17));
-    device_handle.write_bulk(1, image, Duration::from_millis(17));
-    std::thread::sleep(std::time::Duration::from_millis(10000));
+    let mut i = 0;
+    loop {
+        device_handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(1));
+        device_handle.write_bulk(1, image, Duration::from_millis(1));
+        std::thread::sleep(std::time::Duration::from_millis(16));
+        i += 1;
+        if (i > 100) { break; }
+    }
+    
+    
     device_handle.release_interface(0);
 }
