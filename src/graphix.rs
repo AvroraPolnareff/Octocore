@@ -1,8 +1,6 @@
 use once_cell::sync::OnceCell;
-use std::fs::File;
-use std::io::Write;
 
-use skia_safe::{surfaces, Color, EncodedImageFormat, Paint, PaintStyle, Path, Font, FontMgr, FontStyle, Typeface, ImageInfo, ColorType, AlphaType};
+use skia_safe::{surfaces, Color, Paint, PaintStyle, Path, Font, FontMgr, FontStyle, Typeface, ImageInfo, ColorType, AlphaType};
 
 
 pub fn default_typeface() -> Typeface {
@@ -32,7 +30,6 @@ pub fn render_file() -> [u8; 2048 * 160] {
 
     canvas.scale((1.2, 1.2));
     let mut path1 = Path::new();
-    //canvas.draw_path(&path1, &paint);
     path1.move_to((36.0, 5.0));
     path1.quad_to((50.00, 50.0), (800.0, 120.0));
     canvas.translate((10.0, 10.0));
@@ -41,10 +38,10 @@ pub fn render_file() -> [u8; 2048 * 160] {
     paint.set_style(PaintStyle::Stroke);
     canvas.draw_path(&path1, &paint);
     canvas.save();
-    let image = surface.image_snapshot();
     let mut pixels: [u8; 2048 * 160] = [0; 2048 * 160];
     let dest_row = 2048usize;
     surface.read_pixels(&ImageInfo::new((960, 160), ColorType::RGB565, AlphaType::Opaque, None), &mut pixels, dest_row, (0, 0));
+    
     pixels
 }
 

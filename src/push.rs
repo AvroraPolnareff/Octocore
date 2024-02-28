@@ -22,6 +22,6 @@ pub fn draw_image (image: &[u8]) {
     device_handle.claim_interface(0).unwrap();
     device_handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(17));
     device_handle.write_bulk(1, image, Duration::from_millis(17));
-    std::thread::sleep(std::time::Duration::from_millis(5000));
+    std::thread::sleep(std::time::Duration::from_millis(10000));
     device_handle.release_interface(0);
 }
