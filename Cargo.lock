@@ -14,6 +14,7 @@ dependencies = [
  "midir",
  "once_cell",
  "read_input",
+ "rgb565",
  "rusb",
  "skia-safe",
 ]
@@ -1021,6 +1022,12 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
+
+[[package]]
+name = "rgb565"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d43e85498d0bb728f77a88b4313eaf4ed21673f3f8a05c36e835cf6c9c0d066"
 
 [[package]]
 name = "rsor"
