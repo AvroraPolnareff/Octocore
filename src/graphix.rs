@@ -1,7 +1,7 @@
 use once_cell::sync::OnceCell;
-use rgb565::Rgb565;
 
 use skia_safe::{surfaces, Color, Paint, PaintStyle, Path, Font, FontMgr, FontStyle, Typeface, ImageInfo, ColorType, AlphaType, ColorSpace};
+use crate::voice_params::VoiceParams;
 
 
 pub fn default_typeface() -> Typeface {
@@ -16,9 +16,8 @@ pub fn default_typeface() -> Typeface {
 }
 
 static DEFAULT_TYPEFACE: OnceCell<Typeface> = OnceCell::new();
-static XOR_ENCODE_VALUES: [u8; 4] = [0xE7, 0xF3, 0xE7, 0xFF];
 
-pub fn render_file() -> [u8; 2048 * 160] {
+pub fn render_image(params: &VoiceParams, pixels: &mut [u8; 2048 * 160]) -> [u8; 2048 * 160] {
   let image_info = ImageInfo::new((960, 160), ColorType::RGB565, AlphaType::Opaque, ColorSpace::new_srgb());
   let mut surface = surfaces::raster(&image_info, 2048usize, None).expect("surface");
   let canvas = surface.canvas();
@@ -31,7 +30,8 @@ pub fn render_file() -> [u8; 2048 * 160] {
   paint2.set_color(Color::BLUE);
 
 
-  canvas.draw_str("Абоба", (500, 100), &Font::from_typeface(default_typeface(), 80.0), &paint2);
+  canvas.draw_str(format!("{:.2}", params.op2.volume.value()), (300, 100), &Font::from_typeface(default_typeface(), 80.0), &paint2);
+  canvas.draw_str(format!("{:.2}", params.op2.ratio.value()), (500, 100), &Font::from_typeface(default_typeface(), 80.0), &paint2);
 
   canvas.scale((1.0, 1.0));
   let mut path1 = Path::new();
@@ -43,23 +43,9 @@ pub fn render_file() -> [u8; 2048 * 160] {
   canvas.draw_path(&path1, &paint);
 
   canvas.save();
-  let mut pixels: [u8; 2048 * 160] = [0; 2048 * 160];
-  let dest_row = 2048usize;
-  surface.read_pixels(&image_info, &mut pixels, dest_row, (0, 0));
-  for line in pixels.chunks_mut(960) {
-    for frame in line.chunks_exact_mut(2) {
-      let pixel = Rgb565::from_rgb565_le([frame[0], frame[1]]).to_bgr565_le();
-      frame[0] = pixel[0];
-      frame[1] = pixel[1]
 
-    }
-    for frame in line.chunks_exact_mut(4) {
-      frame[0] = XOR_ENCODE_VALUES[0] ^ frame[0];
-      frame[1] = XOR_ENCODE_VALUES[1] ^ frame[1];
-      frame[2] = XOR_ENCODE_VALUES[2] ^ frame[2];
-      frame[3] = XOR_ENCODE_VALUES[3] ^ frame[3];
-    }
-  }
-  pixels
+  let dest_row = 2048usize;
+  surface.read_pixels(&image_info, pixels, dest_row, (0, 0));
+  *pixels
 }
 
