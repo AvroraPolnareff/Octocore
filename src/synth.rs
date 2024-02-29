@@ -5,9 +5,10 @@ use fundsp::audiounit::AudioUnit64;
 use fundsp::hacker::{sine, var};
 use fundsp::hacker32::midi_hz;
 use fundsp::prelude::adsr_live;
-use midi_msg::{ChannelVoiceMsg, MidiMsg};
+use midi_msg::{ChannelVoiceMsg, ControlChange, MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::*;
+use crate::ui_state::{OpPage, Page, UIState};
 use crate::voice_params::VoiceParams;
 
 pub fn create_sound(
@@ -51,7 +52,76 @@ pub fn encoder_to_value(input: u8, value: f64, intensity: f64) -> f64 {
 	else { value + input as f64 / intensity }
 }
 
-pub fn midi_to_params(midi_msg: MidiMsg, voice_params: &VoiceParams) {
+pub fn control_to_pages(control: ControlChange, ui: &UIState) {
+	match control { 
+		ControlChange::UndefinedHighRes {control1, control2: _, value} => {
+			if value > 0 {
+				match control1 {
+					20 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op1 }
+					21 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op2 }
+					22 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op3 }
+					23 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op4 }
+					_ => {}
+				}
+			}
+		}
+		ControlChange::Undefined {control, value} => {
+			if value > 0 {
+				match control {
+					102 => { let mut page = ui.op_subpage.lock().unwrap(); *page = OpPage::Tone }
+					103 => { let mut page = ui.op_subpage.lock().unwrap(); *page = OpPage::Amp }
+					_ => {}
+				}
+			}
+		}
+		_ => {}
+	}
+}
+
+
+
+pub fn control_to_pots(control: ControlChange, voice_params: &VoiceParams, ui: &UIState) {
+	match control {
+		ControlChange::SoundControl2(x) => {
+			let mut page = ui.page.lock().unwrap();
+			let mut op_subpage = ui.op_subpage.lock().unwrap();
+			match *page {
+				Page::Op1 => {
+					match *op_subpage { 
+						OpPage::Tone => {
+							voice_params.op1.volume.set_value(
+								encoder_to_value(x, voice_params.op1.volume.value(), 16.0)
+							)
+						}
+						OpPage::Amp => {
+							voice_params.op1.adsr_params.a.set_value(
+								encoder_to_value(x, voice_params.op1.adsr_params.a.value(), 16.0)
+							)
+						}
+					}
+				}
+				Page::Op2 => {
+					match *op_subpage {
+						OpPage::Tone => {
+							voice_params.op2.volume.set_value(
+								encoder_to_value(x, voice_params.op2.volume.value(), 16.0)
+							)
+						}
+						OpPage::Amp => {
+							voice_params.op2.adsr_params.a.set_value(
+								encoder_to_value(x, voice_params.op2.adsr_params.a.value(), 16.0)
+							)
+						}
+					}
+				}
+				_ => {}
+			}
+		}
+		_ => {}
+	}
+}
+
+pub fn midi_to_params(midi_msg: MidiMsg, voice_params: &VoiceParams, ui: &UIState) {
 	match midi_msg {
 		MidiMsg::ChannelVoice { channel, msg } => {
 			println!("Received {channel} {msg:?}");
@@ -72,8 +142,10 @@ pub fn midi_to_params(midi_msg: MidiMsg, voice_params: &VoiceParams) {
 				ChannelVoiceMsg::PitchBend { bend } => {
 					voice_params.pitch_bend.set_value(pitch_bend_factor(bend));
 				}
-				
-				
+				ChannelVoiceMsg::ControlChange { control } => {
+					control_to_pages(control, ui);
+					control_to_pots(control, voice_params, ui)
+				}
 				_ => {}
 			}
 		}
@@ -85,6 +157,7 @@ pub fn run_input(
 	midi_in: MidiInput,
 	in_port: MidiInputPort,
 	voice_params: VoiceParams,
+	ui: UIState
 ) -> anyhow::Result<()> {
 	println!("\nOpening connection");
 	let in_port_name = midi_in.port_name(&in_port)?;
@@ -94,7 +167,7 @@ pub fn run_input(
 			"midir-read-input",
 			move |_stamp, message, _| {
 				let (msg, _len) = MidiMsg::from_midi(message).unwrap();
-				midi_to_params(msg, &voice_params)
+				midi_to_params(msg, &voice_params, &ui)
 			},
 			(),
 		)

@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub enum OpPage {
 	Tone,
@@ -6,9 +6,14 @@ pub enum OpPage {
 }
 
 pub enum Page {
-	OpSettings(OpPage)
+	Op1,
+	Op2,
+	Op3,
+	Op4
 }
 
+#[derive(Clone)]
 pub struct UIState {
-	page: Mutex<Page>
+	pub page: Arc<Mutex<Page>>,
+	pub op_subpage: Arc<Mutex<OpPage>>
 }
