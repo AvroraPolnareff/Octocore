@@ -2,30 +2,60 @@ use anyhow::bail;
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::audiounit::AudioUnit64;
-use fundsp::hacker::{sine, var};
-use fundsp::hacker32::midi_hz;
-use fundsp::prelude::adsr_live;
+use fundsp::hacker::{midi_hz, clamp01, delerp, Frame, lfo_in, sine, var, U4, adsr_live};
 use midi_msg::{ChannelVoiceMsg, ControlChange, MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::*;
+use crate::adsr::adsr;
+
 use crate::ui_state::{OpPage, Page, UIState};
-use crate::voice_params::VoiceParams;
+use crate::voice_params::{AdsrParams, VoiceParams};
+
+// pub fn adsr(
+// 	params: &AdsrParams
+// ) -> An<
+// 	Pipe<
+// 		f64,
+// 		Stack<f64, Stack<f64, Stack<f64, Var<f64>, Var<f64>>, Var<f64>>, Var<f64>>,
+// 		EnvelopeIn<f64, f64, fn(f64, &Frame<f64, U4>) -> f64, U4, f64>
+// 	>
+// > {
+// 
+// 	let lfo = lfo_in(|t, adsr: &Frame<f64, U4>| {
+// 		let a = adsr[0];
+// 		let d = adsr[1];
+// 		let s = adsr[2];
+// 		let r = adsr[3];
+// 		if t < a {
+// 			delerp(0.0, a, t)
+// 		} else if t < a + d {
+// 			lerp(1.0, s, delerp(a, a + d, t))
+// 		} else if t < r {
+// 			s
+// 		} else {
+// 			lerp(s, 0.0, clamp01(delerp(r, r + 1.0, t)))
+// 		}
+// 	});
+// 	(var(&params.a) | var(&params.d) | var(&params.s) | var(&params.r))
+// 		>> lfo
+// 
+// 	
+// }
 
 pub fn create_sound(
 	voice_params: &VoiceParams
 ) -> Box<dyn AudioUnit64> {
+	
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
 	let ratio = 2.0;
 	let modulator = bf() * ratio
-		>> sine() * (var(&voice_params.control) >> adsr_live(0.01, 0.2, 0.0, 0.2));
-		//* modulator_index;
+		>> sine() * (var(&voice_params.control) >> adsr_live(voice_params.op2.adsr_params.a.value(), 0.2, 0.5, 0.2))
+		* var(&voice_params.op2.volume);
 	let base_tone =
 		modulator * bf() + bf() >> sine();
 
 	Box::new(
-		base_tone * (var(&voice_params.control)
-			>> adsr_live(0.1, 0.2, 0.4, 0.2) * var(&voice_params.volume)
-		)
+		base_tone * ((var(&voice_params.op1.adsr_params.a) | var(&voice_params.op1.adsr_params.d) | var(&voice_params.op1.adsr_params.s) | var(&voice_params.op1.adsr_params.r) | var(&voice_params.control))	>> adsr()) * var(&voice_params.volume)
 	)
 }
 
@@ -90,12 +120,12 @@ pub fn control_to_pots(control: ControlChange, voice_params: &VoiceParams, ui: &
 					match *op_subpage { 
 						OpPage::Tone => {
 							voice_params.op1.volume.set_value(
-								encoder_to_value(x, voice_params.op1.volume.value(), 16.0)
+								encoder_to_value(x, voice_params.op1.volume.value(), 32.0)
 							)
 						}
 						OpPage::Amp => {
 							voice_params.op1.adsr_params.a.set_value(
-								encoder_to_value(x, voice_params.op1.adsr_params.a.value(), 16.0)
+								encoder_to_value(x, voice_params.op1.adsr_params.a.value(), 64.0)
 							)
 						}
 					}
@@ -104,12 +134,12 @@ pub fn control_to_pots(control: ControlChange, voice_params: &VoiceParams, ui: &
 					match *op_subpage {
 						OpPage::Tone => {
 							voice_params.op2.volume.set_value(
-								encoder_to_value(x, voice_params.op2.volume.value(), 16.0)
+								encoder_to_value(x, voice_params.op2.volume.value(), 32.0)
 							)
 						}
 						OpPage::Amp => {
 							voice_params.op2.adsr_params.a.set_value(
-								encoder_to_value(x, voice_params.op2.adsr_params.a.value(), 16.0)
+								encoder_to_value(x, voice_params.op2.adsr_params.a.value(), 64.0)
 							)
 						}
 					}

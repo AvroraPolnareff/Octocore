@@ -17,6 +17,7 @@ dependencies = [
  "rgb565",
  "rusb",
  "skia-safe",
+ "typenum",
 ]
 
 [[package]]

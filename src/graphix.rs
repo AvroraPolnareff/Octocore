@@ -50,7 +50,7 @@ pub fn render_image(params: &VoiceParams, state: &UIState, pixels: &mut [u8; 204
 
   let page = state.page.lock().unwrap();
   let op_subpage = state.op_subpage.lock().unwrap();
-  let calc_param_pos = |ord: f32| (120. * ord - 120. / 2. - 30., 40.);
+  let calc_param_pos = |ord: f32| (120. * ord - 120. / 2. - 40., 60.);
   match *page {
     Page::Op1 => {
       match *op_subpage {

@@ -3,6 +3,7 @@ mod graphix;
 mod push;
 mod synth;
 mod ui_state;
+mod adsr;
 
 use std::sync::{Arc, Mutex};
 use midir::{MidiInput};
