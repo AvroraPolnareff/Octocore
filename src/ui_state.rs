@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone)]
 pub enum OpPage {
 	Tone,
 	Amp,

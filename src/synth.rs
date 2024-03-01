@@ -5,15 +5,16 @@ use fundsp::audionode::{Pipe, Stack};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
 use fundsp::envelope::EnvelopeIn;
-use fundsp::hacker::{midi_hz, clamp01, delerp, Frame, lfo_in, sine, var, U4, adsr_live, Shared};
+use fundsp::hacker::{Frame, sine, var, Shared};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
-use midi_msg::{ChannelVoiceMsg, ControlChange, MidiMsg};
+use midi_msg::{MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::*;
 use crate::adsr::adsr;
+use crate::midi_input::midi_to_params;
 
-use crate::ui_state::{OpPage, Page, UIState};
+use crate::ui_state::{UIState};
 use crate::voice_params::{AdsrParams, VoiceParams};
 
 
@@ -43,12 +44,12 @@ pub fn create_sound(
 ) -> Box<dyn AudioUnit64> {
 	
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
-	let ratio = 2.0;
-	let modulator = bf() * ratio
+	let modulator = bf() * var(&voice_params.op2.ratio)
 		>> sine() * c_adsr(&voice_params.op2.adsr_params, &voice_params.control)
 		* var(&voice_params.op2.volume);
+	let bff = || bf() * var(&voice_params.op1.ratio);
 	let base_tone =
-		modulator * bf() + bf() >> sine();
+		modulator * bff() + bff() >> sine() * var(&voice_params.op1.volume);
 
 	Box::new(
 		base_tone * c_adsr(&voice_params.op1.adsr_params, &voice_params.control) * var(&voice_params.volume)
@@ -73,111 +74,7 @@ pub fn get_midi_device(midi_in: &mut MidiInput) -> anyhow::Result<MidiInputPort>
 	}
 }
 
-pub fn encoder_to_value(input: u8, value: f64, intensity: f64) -> f64 {
-	if input > 64 { value + (-128 + input as i8) as f64 / intensity }
-	else { value + input as f64 / intensity }
-}
 
-pub fn control_to_pages(control: ControlChange, ui: &UIState) {
-	match control { 
-		ControlChange::UndefinedHighRes {control1, control2: _, value} => {
-			if value > 0 {
-				match control1 {
-					20 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op1 }
-					21 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op2 }
-					22 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op3 }
-					23 => { let mut page = ui.page.lock().unwrap(); *page = Page::Op4 }
-					_ => {}
-				}
-			}
-		}
-		ControlChange::Undefined {control, value} => {
-			if value > 0 {
-				match control {
-					102 => { let mut page = ui.op_subpage.lock().unwrap(); *page = OpPage::Tone }
-					103 => { let mut page = ui.op_subpage.lock().unwrap(); *page = OpPage::Amp }
-					_ => {}
-				}
-			}
-		}
-		_ => {}
-	}
-}
-
-
-
-pub fn pots_to_controls(control: ControlChange, voice_params: &VoiceParams, ui: &UIState) {
-	match control {
-		ControlChange::SoundControl2(x) => {
-			let mut page = ui.page.lock().unwrap();
-			let mut op_subpage = ui.op_subpage.lock().unwrap();
-			match *page {
-				Page::Op1 => {
-					match *op_subpage { 
-						OpPage::Tone => {
-							voice_params.op1.volume.set_value(
-								encoder_to_value(x, voice_params.op1.volume.value(), 32.0)
-							)
-						}
-						OpPage::Amp => {
-							voice_params.op1.adsr_params.a.set_value(
-								encoder_to_value(x, voice_params.op1.adsr_params.a.value(), 64.0)
-							)
-						}
-					}
-				}
-				Page::Op2 => {
-					match *op_subpage {
-						OpPage::Tone => {
-							voice_params.op2.volume.set_value(
-								encoder_to_value(x, voice_params.op2.volume.value(), 32.0)
-							)
-						}
-						OpPage::Amp => {
-							voice_params.op2.adsr_params.a.set_value(
-								encoder_to_value(x, voice_params.op2.adsr_params.a.value(), 64.0)
-							)
-						}
-					}
-				}
-				_ => {}
-			}
-		}
-		_ => {}
-	}
-}
-
-pub fn midi_to_params(midi_msg: MidiMsg, voice_params: &VoiceParams, ui: &UIState) {
-	match midi_msg {
-		MidiMsg::ChannelVoice { channel, msg } => {
-			println!("Received {channel} {msg:?}");
-			match msg {
-				ChannelVoiceMsg::NoteOn { note, velocity } => {
-					if note > 12 {     // filter encoder touches on push 2
-						voice_params.pitch.set_value(midi_hz(note as f64));
-						voice_params.volume.set_value(velocity as f64 / 127.0);
-						voice_params.pitch_bend.set_value(1.0);
-						voice_params.control.set_value(1.0);
-					}
-				}
-				ChannelVoiceMsg::NoteOff { note, velocity: _ } => {
-					if voice_params.pitch.value() == midi_hz(note as f64) {
-						voice_params.control.set_value(-1.0);
-					}
-				}
-				ChannelVoiceMsg::PitchBend { bend } => {
-					voice_params.pitch_bend.set_value(pitch_bend_factor(bend));
-				}
-				ChannelVoiceMsg::ControlChange { control } => {
-					control_to_pages(control, ui);
-					pots_to_controls(control, voice_params, ui)
-				}
-				_ => {}
-			}
-		}
-		_ => {}
-	}
-}
 
 pub fn run_input(
 	midi_in: MidiInput,

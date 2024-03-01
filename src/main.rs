@@ -4,6 +4,7 @@ mod push;
 mod synth;
 mod ui_state;
 mod adsr;
+mod midi_input;
 
 use std::sync::{Arc, Mutex};
 use midir::{MidiInput};
