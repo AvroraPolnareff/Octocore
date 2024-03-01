@@ -10,10 +10,10 @@ pub fn adsr<F: Float + Atomic>() -> An<EnvelopeIn<F, F, impl Fn(F, &Frame<F, U5>
 	let attack_start = var(&a);
 	let release_start = var(&b);
 	lfo_in(move |time, control| {
-		let a = control[0];
-		let d = control[1];
-		let s = control[2];
-		let r = control[3];
+		let attack = control[0];
+		let decay = control[1];
+		let sustain = control[2];
+		let release = control[3];
 		let control = control[4];
 		if attack_start.value() < zero && control > zero {
 			attack_start.set_value(time);
@@ -23,9 +23,9 @@ pub fn adsr<F: Float + Atomic>() -> An<EnvelopeIn<F, F, impl Fn(F, &Frame<F, U5>
 			attack_start.set_value(neg1);
 		}
 		clamp01(if release_start.value() < zero {
-			ads(a, d, s, time - attack_start.value())
+			ads(attack, decay, sustain, time - attack_start.value())
 		} else {
-			releasing(s, r, time - release_start.value())
+			releasing(sustain, release, time - release_start.value())
 		})
 	})
 }
