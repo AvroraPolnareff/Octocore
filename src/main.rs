@@ -9,12 +9,13 @@ mod midi_output;
 
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel};
+use fundsp::hacker32::Net64;
 use midir::{MidiInput, MidiOutput};
 use crate::graphix::render_image;
 use crate::midi_input::{get_midi_device, run_input};
 use crate::midi_output::{get_midi_out_device, run_midi_out};
 use crate::push::{Push2};
-use crate::synth::{run_output};
+use crate::synth::{create_sound, run_output};
 use crate::ui_state::{OpPage, Page, UIEvent, UIState};
 use crate::voice_params::VoiceParams;
 
@@ -47,10 +48,12 @@ fn main() -> anyhow::Result<()> {
     }
   });
   let (ui_tx, ui_rx) = channel::<UIEvent>();
+  let sound = create_sound(&voice_params);
+  let mut net = Net64::new(0, 1);
+  let sound_id = net.chain(sound);
+  let mut backend = net.backend();
 
-  run_output(
-      voice_params.clone()
-  );
+  run_output(&mut backend);
   run_midi_out(midi_out, &out_port, ui_rx);
   run_input(midi_in, in_port, voice_params, ui_state, ui_tx.clone())
 }

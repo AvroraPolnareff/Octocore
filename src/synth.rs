@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Receiver;
 use anyhow::bail;
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -5,12 +7,11 @@ use fundsp::audionode::{Pipe, Stack};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
 use fundsp::envelope::EnvelopeIn;
-use fundsp::hacker::{Frame, sine, var, Shared};
+use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
-use midir::{Ignore, MidiInput, MidiInputPort};
-use read_input::prelude::*;
 use crate::adsr::adsr;
+use crate::ui_state::UIEvent;
 use crate::voice_params::{AdsrParams, VoiceParams};
 
 
@@ -56,39 +57,16 @@ pub fn pitch_bend_factor(bend: u16) -> f64 {
 	2.0_f64.powf(((bend as f64 - 8192.0) / 8192.0) / 12.0)
 }
 
-pub fn run_output(
-	voice_params: VoiceParams,
-) {
-	let host = cpal::default_host();
-	let device = host
-		.default_output_device()
-		.expect("failed to find a default output device");
-	let config = device.default_output_config().unwrap();
-	match config.sample_format() {
-		SampleFormat::F32 => {
-			run_synth::<f32>(voice_params, device, config.into())
-		}
-		SampleFormat::I16 => {
-			run_synth::<i16>(voice_params, device, config.into())
-		}
-		SampleFormat::U16 => {
-			run_synth::<u16>(voice_params, device, config.into())
-		}
-		_ => panic!("Unsupported format"),
-	}
-}
-
 fn run_synth<T: SizedSample + FromSample<f64>>(
-	voice_params: VoiceParams,
 	device: Device,
 	config: StreamConfig,
+	backend: &mut NetBackend64
 ) {
 	std::thread::spawn(move || {
-		let sample_rate = config.sample_rate.0 as f64;
-		let mut sound = create_sound(&voice_params);
-		sound.set_sample_rate(sample_rate);
+		
+		backend.set_sample_rate(config.sample_rate.0 as f64);
 
-		let mut next_value = move || sound.get_stereo();
+		let mut next_value = move || backend.get_stereo();
 		let channels = config.channels as usize;
 		let err_fn = |err| eprintln!("an error occurred on stream: {err}");
 		let stream = device
@@ -103,10 +81,29 @@ fn run_synth<T: SizedSample + FromSample<f64>>(
 			.unwrap();
 
 		stream.play().unwrap();
-		loop {
-			std::thread::sleep(std::time::Duration::from_millis(1));
-		}
 	});
+}
+
+pub fn run_output(
+	backend: &mut NetBackend64
+) {
+	let host = cpal::default_host();
+	let device = host
+		.default_output_device()
+		.expect("failed to find a default output device");
+	let config = device.default_output_config().unwrap();
+	match config.sample_format() {
+		SampleFormat::F32 => {
+			run_synth::<f32>(device, config.into(), backend)
+		}
+		SampleFormat::I16 => {
+			run_synth::<i16>(device, config.into(), backend)
+		}
+		SampleFormat::U16 => {
+			run_synth::<u16>(device, config.into(), backend)
+		}
+		_ => panic!("Unsupported format"),
+	}
 }
 
 pub fn write_data<T: SizedSample + FromSample<f64>>(

@@ -8,7 +8,7 @@ use read_input::prelude::*;
 
 pub fn get_midi_out_device(midi_out: &mut MidiOutput) -> anyhow::Result<MidiOutputPort> {
 	let out_ports = midi_out.ports();
-	if (out_ports.is_empty()) {
+	if out_ports.is_empty() {
 		bail!("No MIDI devices attached")
 	} else {
 		for (i, port) in out_ports.iter().enumerate() {
@@ -100,6 +100,7 @@ pub fn run_midi_out(
 						}
 					}
 				}
+				_ => {}
 			}
 		}
 	});
