@@ -8,13 +8,9 @@ use fundsp::envelope::EnvelopeIn;
 use fundsp::hacker::{Frame, sine, var, Shared};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
-use midi_msg::{MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::*;
 use crate::adsr::adsr;
-use crate::midi_input::midi_to_params;
-
-use crate::ui_state::{UIState};
 use crate::voice_params::{AdsrParams, VoiceParams};
 
 
@@ -54,52 +50,6 @@ pub fn create_sound(
 	Box::new(
 		base_tone * c_adsr(&voice_params.op1.adsr_params, &voice_params.control) * var(&voice_params.volume)
 	)
-}
-
-pub fn get_midi_device(midi_in: &mut MidiInput) -> anyhow::Result<MidiInputPort> {
-	midi_in.ignore(Ignore::None);
-	let in_ports = midi_in.ports();
-	if in_ports.is_empty() {
-		bail!("No MIDI devices attached")
-	} else {
-		for (i,port) in midi_in.ports().iter().enumerate() {
-			println!("{i}. {}", midi_in.port_name(port).unwrap())
-		}
-		let port = input::<usize>().msg("Select input port: ").get();
-		println!(
-			"Chose MIDI device {}",
-			midi_in.port_name(&in_ports[port]).unwrap()
-		);
-		Ok(in_ports[port].clone())
-	}
-}
-
-
-
-pub fn run_input(
-	midi_in: MidiInput,
-	in_port: MidiInputPort,
-	voice_params: VoiceParams,
-	ui: UIState
-) -> anyhow::Result<()> {
-	println!("\nOpening connection");
-	let in_port_name = midi_in.port_name(&in_port)?;
-	let _conn_in = midi_in
-		.connect(
-			&in_port,
-			"midir-read-input",
-			move |_stamp, message, _| {
-				let (msg, _len) = MidiMsg::from_midi(message).unwrap();
-				midi_to_params(msg, &voice_params, &ui)
-			},
-			(),
-		)
-		.unwrap();
-	println!("Connection open, reading input from '{in_port_name}'");
-
-	let _ = input::<String>().msg("(press enter to exit)...\n").get();
-	println!("Closing connection");
-	Ok(())
 }
 
 pub fn pitch_bend_factor(bend: u16) -> f64 {

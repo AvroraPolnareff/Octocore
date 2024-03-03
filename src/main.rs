@@ -5,26 +5,33 @@ mod synth;
 mod ui_state;
 mod adsr;
 mod midi_input;
+mod midi_output;
 
 use std::sync::{Arc, Mutex};
-use midir::{MidiInput};
+use std::sync::mpsc::{channel};
+use midir::{MidiInput, MidiOutput};
 use crate::graphix::render_image;
+use crate::midi_input::{get_midi_device, run_input};
+use crate::midi_output::{get_midi_out_device, run_midi_out};
 use crate::push::{Push2};
-use crate::synth::{get_midi_device, run_input, run_output};
-use crate::ui_state::{OpPage, Page, UIState};
+use crate::synth::{run_output};
+use crate::ui_state::{OpPage, Page, UIEvent, UIState};
 use crate::voice_params::VoiceParams;
 
 
 fn main() -> anyhow::Result<()> {
   let mut midi_in = MidiInput::new("midir reading input")?;
+  let mut midi_out = MidiOutput::new("midir writing output")?;
   let in_port = get_midi_device(&mut midi_in)?;
+  let out_port = get_midi_out_device(&mut midi_out)?;
 
   let voice_params = VoiceParams::default();
   let ui_state = UIState {
     page: Arc::new(Mutex::new(Page::Op1)),
     op_subpage: Arc::new(Mutex::new(OpPage::Tone))
   };
-  
+
+
   let cloned_params = voice_params.clone();
   let cloned_state = ui_state.clone();
   std::thread::spawn(move || {
@@ -39,10 +46,12 @@ fn main() -> anyhow::Result<()> {
       //println!("Elapsed: {:.2?}", elapsed);
     }
   });
+  let (ui_tx, ui_rx) = channel::<UIEvent>();
 
   run_output(
       voice_params.clone()
   );
-  run_input(midi_in, in_port, voice_params, ui_state)
+  run_midi_out(midi_out, &out_port, ui_rx);
+  run_input(midi_in, in_port, voice_params, ui_state, ui_tx.clone())
 }
 

@@ -18,3 +18,8 @@ pub struct UIState {
 	pub page: Arc<Mutex<Page>>,
 	pub op_subpage: Arc<Mutex<OpPage>>
 }
+
+pub enum UIEvent {
+	PageChange(Page),
+	OpSubpageChange(OpPage),
+}
