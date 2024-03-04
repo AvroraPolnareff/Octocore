@@ -50,11 +50,12 @@ fn main() -> anyhow::Result<()> {
   let (ui_tx, ui_rx) = channel::<UIEvent>();
   let sound = create_sound(&voice_params);
   let mut net = Net64::new(0, 1);
+  // net.commit();
   let sound_id = net.chain(sound);
-  let mut backend = net.backend();
+  let backend = Arc::new(Mutex::new(net.backend()));
 
-  run_output(&mut backend);
   run_midi_out(midi_out, &out_port, ui_rx);
+  run_output(backend.clone());
   run_input(midi_in, in_port, voice_params, ui_state, ui_tx.clone())
 }
 

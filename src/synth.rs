@@ -60,13 +60,14 @@ pub fn pitch_bend_factor(bend: u16) -> f64 {
 fn run_synth<T: SizedSample + FromSample<f64>>(
 	device: Device,
 	config: StreamConfig,
-	backend: &mut NetBackend64
+	backend: Arc<Mutex<NetBackend64>>
 ) {
 	std::thread::spawn(move || {
-		
+		let mut backend = backend.lock().unwrap();
 		backend.set_sample_rate(config.sample_rate.0 as f64);
 
-		let mut next_value = move || backend.get_stereo();
+		let mut clonned = backend.clone();
+		let mut next_value = move || clonned.get_stereo();
 		let channels = config.channels as usize;
 		let err_fn = |err| eprintln!("an error occurred on stream: {err}");
 		let stream = device
@@ -81,11 +82,14 @@ fn run_synth<T: SizedSample + FromSample<f64>>(
 			.unwrap();
 
 		stream.play().unwrap();
+		loop {
+			std::thread::sleep(std::time::Duration::from_millis(1));
+		}
 	});
 }
 
 pub fn run_output(
-	backend: &mut NetBackend64
+	backend: Arc<Mutex<NetBackend64>>
 ) {
 	let host = cpal::default_host();
 	let device = host
