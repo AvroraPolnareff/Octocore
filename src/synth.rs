@@ -55,7 +55,7 @@ pub fn create_sound(
 
 pub fn sine_lfo() -> Box<dyn AudioUnit64> {
 	Box::new(
-		pass() * (sine_hz(50.))
+		pass() * (sine_hz(0.5))
 	)
 }
 
@@ -66,14 +66,13 @@ pub fn pitch_bend_factor(bend: u16) -> f64 {
 fn run_synth<T: SizedSample + FromSample<f64>>(
 	device: Device,
 	config: StreamConfig,
-	backend: Arc<Mutex<NetBackend64>>
+	backend: NetBackend64
 ) {
 	std::thread::spawn(move || {
-		let mut backend = backend.lock().unwrap();
+		let mut backend = backend;
 		backend.set_sample_rate(config.sample_rate.0 as f64);
 
-		let mut clonned = backend.clone();
-		let mut next_value = move || clonned.get_stereo();
+		let mut next_value = move || backend.get_stereo();
 		let channels = config.channels as usize;
 		let err_fn = |err| eprintln!("an error occurred on stream: {err}");
 		let stream = device
@@ -95,7 +94,7 @@ fn run_synth<T: SizedSample + FromSample<f64>>(
 }
 
 pub fn run_output(
-	backend: Arc<Mutex<NetBackend64>>
+	backend: NetBackend64
 ) {
 	let host = cpal::default_host();
 	let device = host

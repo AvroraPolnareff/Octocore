@@ -55,13 +55,12 @@ fn main() -> anyhow::Result<()> {
   // net.commit();
   let sound_id = net.chain(sound);
   let dummy_id = net.chain(Box::new(pass()));
-  let backend = Arc::new(Mutex::new(net.backend()));
+  //let backend = Arc::new(Mutex::new());
 
   let mut connection = get_midi_out_connection(midi_out, &out_port);
-  run_output(backend);
+  run_output(net.backend());
   std::thread::spawn(move || {
     init_midi_ui(&mut connection);
-    let mut lfo_id: Option<NodeId> = None;
     for event in ui_rx {
       send_ui_midi(&event, &mut connection);
       match event {
