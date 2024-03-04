@@ -22,4 +22,5 @@ pub struct UIState {
 pub enum UIEvent {
 	PageChange(Page),
 	OpSubpageChange(OpPage),
+	LFO(f64)
 }

@@ -8,7 +8,7 @@ use read_input::prelude::input;
 use crate::synth::pitch_bend_factor;
 use crate::ui_state::{OpPage, Page, UIEvent, UIState};
 use crate::voice_params::{OpParams, VoiceParams};
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{Sender};
 use anyhow::bail;
 use read_input::prelude::*;
 
@@ -143,7 +143,14 @@ pub fn midi_to_params(
 				}
 				ChannelVoiceMsg::ControlChange { control } => {
 					control_to_pages(control, ui, &ui_tx);
-					pots_to_controls(control, voice_params, ui)
+					pots_to_controls(control, voice_params, ui);
+					if let ControlChange::Undefined{control: 52, value: x} = control {
+						if x > 0 {
+							ui_tx.send(UIEvent::LFO(0.5)).unwrap()
+						} else {
+							ui_tx.send(UIEvent::LFO(0.0)).unwrap()
+						}
+					}
 				}
 				_ => {}
 			}
