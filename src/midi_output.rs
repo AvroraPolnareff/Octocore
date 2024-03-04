@@ -66,7 +66,7 @@ pub fn init_midi_ui(conn: &mut MidiOutputConnection) {
 	send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn);
 }
 
-pub fn send_ui_midi(event: UIEvent, conn: &mut MidiOutputConnection) {
+pub fn send_ui_midi(event: &UIEvent, conn: &mut MidiOutputConnection) {
 	match event {
 		UIEvent::OpSubpageChange(page) => {
 			match page {

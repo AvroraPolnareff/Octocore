@@ -10,12 +10,14 @@ mod midi_output;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel};
 use fundsp::hacker32::Net64;
+use fundsp::hacker::{biquad, lowpass, pass, sine};
+use fundsp::net::NodeId;
 use midir::{MidiInput, MidiOutput};
 use crate::graphix::render_image;
 use crate::midi_input::{get_midi_device, run_input};
 use crate::midi_output::{get_midi_out_device, get_midi_out_connection, init_midi_ui, send_ui_midi};
 use crate::push::{Push2};
-use crate::synth::{create_sound, run_output};
+use crate::synth::{create_sound, run_output, sine_lfo};
 use crate::ui_state::{OpPage, Page, UIEvent, UIState};
 use crate::voice_params::VoiceParams;
 
@@ -52,14 +54,28 @@ fn main() -> anyhow::Result<()> {
   let mut net = Net64::new(0, 1);
   // net.commit();
   let sound_id = net.chain(sound);
+  let dummy_id = net.chain(Box::new(pass()));
   let backend = Arc::new(Mutex::new(net.backend()));
 
   let mut connection = get_midi_out_connection(midi_out, &out_port);
-  run_output(backend.clone());
+  run_output(backend);
   std::thread::spawn(move || {
     init_midi_ui(&mut connection);
+    let mut lfo_id: Option<NodeId> = None;
     for event in ui_rx {
-      send_ui_midi(event, &mut connection);
+      send_ui_midi(&event, &mut connection);
+      match event {
+        UIEvent::PageChange(_) => {}
+        UIEvent::OpSubpageChange(_) => {}
+        UIEvent::LFO(x) => {
+          if x > 0. {
+            net.replace(dummy_id, sine_lfo());
+          } else {
+            net.replace(dummy_id, Box::new(pass()));
+          }
+          net.commit();
+        }
+      }
     }
   });
   run_input(midi_in, in_port, voice_params, ui_state, ui_tx.clone())

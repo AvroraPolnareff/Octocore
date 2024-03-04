@@ -7,7 +7,7 @@ use fundsp::audionode::{Pipe, Stack};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
 use fundsp::envelope::EnvelopeIn;
-use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64};
+use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64, pass, sine_hz};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
 use crate::adsr::adsr;
@@ -50,6 +50,12 @@ pub fn create_sound(
 
 	Box::new(
 		base_tone * c_adsr(&voice_params.op1.adsr_params, &voice_params.control) * var(&voice_params.volume)
+	)
+}
+
+pub fn sine_lfo() -> Box<dyn AudioUnit64> {
+	Box::new(
+		pass() * (sine_hz(50.))
 	)
 }
 
