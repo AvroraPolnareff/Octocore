@@ -13,7 +13,7 @@ use fundsp::hacker32::Net64;
 use midir::{MidiInput, MidiOutput};
 use crate::graphix::render_image;
 use crate::midi_input::{get_midi_device, run_input};
-use crate::midi_output::{get_midi_out_device, run_midi_out};
+use crate::midi_output::{get_midi_out_device, get_midi_out_connection, init_midi_ui, send_ui_midi};
 use crate::push::{Push2};
 use crate::synth::{create_sound, run_output};
 use crate::ui_state::{OpPage, Page, UIEvent, UIState};
@@ -54,8 +54,14 @@ fn main() -> anyhow::Result<()> {
   let sound_id = net.chain(sound);
   let backend = Arc::new(Mutex::new(net.backend()));
 
-  run_midi_out(midi_out, &out_port, ui_rx);
+  let mut connection = get_midi_out_connection(midi_out, &out_port);
   run_output(backend.clone());
+  std::thread::spawn(move || {
+    init_midi_ui(&mut connection);
+    for event in ui_rx {
+      send_ui_midi(event, &mut connection);
+    }
+  });
   run_input(midi_in, in_port, voice_params, ui_state, ui_tx.clone())
 }
 

@@ -61,48 +61,48 @@ fn send_switch<const T: usize>(
 	}
 }
 
-pub fn run_midi_out(
-	midi_out: MidiOutput,
-	out_port: &MidiOutputPort,
-	rx: Receiver<UIEvent>
-) {
-	let out_port_name = midi_out.port_name(out_port).expect("Cannot get output name");
-	let mut conn = midi_out.connect(out_port, "midir-write-output")
-		.expect(&format!("Error while openening connection {out_port_name}"));
-	send_switch(Led {led_num: 102, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, &mut conn);
-	send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, &mut conn);
-	std::thread::spawn(move || {
-		for event in rx {
-			match event {
-				UIEvent::OpSubpageChange(page) => {
-					match page {
-						OpPage::Tone => {
-							send_switch(Led {led_num: 102, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, &mut conn)
-						}
-						OpPage::Amp => {
-							send_switch(Led {led_num: 103, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, &mut conn)
-						}
-					}
+pub fn init_midi_ui(conn: &mut MidiOutputConnection) {
+	send_switch(Led {led_num: 102, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn);
+	send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn);
+}
+
+pub fn send_ui_midi(event: UIEvent, conn: &mut MidiOutputConnection) {
+	match event {
+		UIEvent::OpSubpageChange(page) => {
+			match page {
+				OpPage::Tone => {
+					send_switch(Led {led_num: 102, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
-				UIEvent::PageChange(page) => {
-					match page {
-						Page::Op1 => {
-							send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, &mut conn)
-						}
-						Page::Op2 => {
-							send_switch(Led {led_num: 21, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, &mut conn)
-						}
-						Page::Op3 => {
-							send_switch(Led {led_num: 22, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, &mut conn)
-						}
-						Page::Op4 => {
-							send_switch(Led {led_num: 23, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, &mut conn)
-						}
-					}
+				OpPage::Amp => {
+					send_switch(Led {led_num: 103, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
-				_ => {}
 			}
 		}
-	});
-	
+		UIEvent::PageChange(page) => {
+			match page {
+				Page::Op1 => {
+					send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+				}
+				Page::Op2 => {
+					send_switch(Led {led_num: 21, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+				}
+				Page::Op3 => {
+					send_switch(Led {led_num: 22, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+				}
+				Page::Op4 => {
+					send_switch(Led {led_num: 23, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+				}
+			}
+		}
+		_ => {}
+	}
+}
+
+pub fn get_midi_out_connection(
+	midi_out: MidiOutput,
+	out_port: &MidiOutputPort
+) -> MidiOutputConnection {
+	let out_port_name = midi_out.port_name(out_port).expect("Cannot get output name");
+	midi_out.connect(out_port, "midir-write-output")
+		.expect(&format!("Error while openening connection {out_port_name}"))
 }
