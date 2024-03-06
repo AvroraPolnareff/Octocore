@@ -192,14 +192,10 @@ pub fn get_midi_device(midi_in: &mut MidiInput) -> anyhow::Result<MidiInputPort>
 	if in_ports.is_empty() {
 		bail!("No MIDI devices attached")
 	} else {
-		for (i, port) in in_ports.iter().enumerate() {
-			println!("{i}. {}", midi_in.port_name(port).unwrap())
-		}
-		let port = input::<usize>().msg("Select input port: ").get();
-		println!(
-			"Chose MIDI device {}",
-			midi_in.port_name(&in_ports[port]).unwrap()
-		);
-		Ok(in_ports[port].clone())
+		let (port, _) = in_ports.iter()
+			.map(|port| (port, midi_in.port_name(port).unwrap()))
+			.find(|(_, name)| name == "Ableton Push 2")
+			.expect("Can't find Ableton Push 2 device");
+		Ok(port.clone())
 	}
 }

@@ -1,6 +1,3 @@
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc::Receiver;
-use anyhow::bail;
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::audionode::{Pipe, Stack};
@@ -11,7 +8,6 @@ use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64, pass, sine_hz};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
 use crate::adsr::adsr;
-use crate::ui_state::UIEvent;
 use crate::voice_params::{AdsrParams, VoiceParams};
 
 

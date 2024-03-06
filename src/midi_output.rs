@@ -1,25 +1,19 @@
-use std::sync::mpsc::Receiver;
 use anyhow::bail;
 use midi_msg::{Channel, ChannelVoiceMsg, ControlChange};
 use midi_msg::MidiMsg;
 use crate::ui_state::{OpPage, Page, UIEvent};
 use midir::{MidiOutput, MidiOutputConnection, MidiOutputPort};
-use read_input::prelude::*;
 
 pub fn get_midi_out_device(midi_out: &mut MidiOutput) -> anyhow::Result<MidiOutputPort> {
 	let out_ports = midi_out.ports();
 	if out_ports.is_empty() {
 		bail!("No MIDI devices attached")
 	} else {
-		for (i, port) in out_ports.iter().enumerate() {
-			println!("{i}. {}", midi_out.port_name(port).unwrap())
-		}
-		let port = input::<usize>().msg("Select output port: ").get();
-		println!(
-			"Chose MIDI device {}",
-			midi_out.port_name(&out_ports[port]).unwrap()
-		);
-		Ok(out_ports[port].clone())
+			let (port, _) = out_ports.iter()
+				.map(|port| (port, midi_out.port_name(port).unwrap()))
+				.find(|(_, name)| name == "Ableton Push 2")
+				.expect("Can't find Ableton Push 2 device");
+		Ok(port.clone())
 	}
 }
 
