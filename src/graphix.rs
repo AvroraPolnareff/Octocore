@@ -31,8 +31,18 @@ pub fn render_param(
   paint.set_anti_alias(true);
   paint.set_stroke_width(1.0);
 
-  canvas.draw_str(name, (x, y), &Font::from_typeface(default_typeface(), 30.0), &paint);
-  canvas.draw_str(format!("{:.2}", value), (x, y + 40.0), &Font::from_typeface(default_typeface(), 40.0), &paint);
+  canvas.draw_str(
+    name,
+    (x, y),
+    &Font::from_typeface(default_typeface(), 30.0),
+    &paint
+  );
+  canvas.draw_str(
+    format!("{:.2}", value),
+    (x, y + 40.0),
+    &Font::from_typeface(default_typeface(), 40.0),
+    &paint
+  );
 
 }
 
@@ -84,16 +94,7 @@ pub fn render_image(params: &VoiceParams, state: &UIState, pixels: &mut [u8; 204
     }
     _ => {}
   }
-
   canvas.scale((1.0, 1.0));
-  // let mut path1 = Path::new();
-  // path1.move_to((-50.0, -20.0));
-  // path1.quad_to((50.00, 50.0), (800.0, 120.0));
-  // canvas.translate((10.0, 10.0));
-  // paint.set_stroke_width(20.0);
-  // paint.set_style(PaintStyle::Stroke);
-  // canvas.draw_path(&path1, &paint);
-
   canvas.save();
 
   let dest_row = 2048usize;

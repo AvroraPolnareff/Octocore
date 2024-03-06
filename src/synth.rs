@@ -8,6 +8,7 @@ use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64, pass, sine_hz};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
 use crate::adsr::adsr;
+use crate::Poly::VoiceIndex;
 use crate::voice_params::{AdsrParams, VoiceParams};
 
 
@@ -33,9 +34,10 @@ pub fn c_adsr(
 }
 
 pub fn create_sound(
-	voice_params: &VoiceParams
+	voice_params: &VoiceParams,
+	voice_index: &VoiceIndex
 ) -> Box<dyn AudioUnit64> {
-	
+
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
 	let modulator = bf() * var(&voice_params.op2.ratio)
 		>> sine() * c_adsr(&voice_params.op2.adsr_params, &voice_params.control)

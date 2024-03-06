@@ -1,7 +1,7 @@
 use anyhow::bail;
 use midi_msg::{Channel, ChannelVoiceMsg, ControlChange};
 use midi_msg::MidiMsg;
-use crate::ui_state::{OpPage, Page, UIEvent};
+use crate::ui_state::{OpPage, Page, InputEvent};
 use midir::{MidiOutput, MidiOutputConnection, MidiOutputPort};
 
 pub fn get_midi_out_device(midi_out: &mut MidiOutput) -> anyhow::Result<MidiOutputPort> {
@@ -60,31 +60,31 @@ pub fn init_midi_ui(conn: &mut MidiOutputConnection) {
 	send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn);
 }
 
-pub fn send_ui_midi(event: &UIEvent, conn: &mut MidiOutputConnection) {
+pub fn send_ui_midi(event: &InputEvent, conn: &mut MidiOutputConnection) {
 	match event {
-		UIEvent::OpSubpageChange(page) => {
+		InputEvent::OpSubpageChange(page) => {
 			match page {
 				OpPage::Tone => {
-					send_switch(Led {led_num: 102, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
+					send_switch(Led {led_num: SECOND_LEDS_ROW[0], led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
 				}
 				OpPage::Amp => {
-					send_switch(Led {led_num: 103, led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
+					send_switch(Led {led_num: SECOND_LEDS_ROW[1], led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
 				}
 			}
 		}
-		UIEvent::PageChange(page) => {
+		InputEvent::PageChange(page) => {
 			match page {
 				Page::Op1 => {
-					send_switch(Led {led_num: 20, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+					send_switch(Led {led_num: FIRST_LEDS_ROW[0], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
 				Page::Op2 => {
-					send_switch(Led {led_num: 21, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+					send_switch(Led {led_num: FIRST_LEDS_ROW[1], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
 				Page::Op3 => {
-					send_switch(Led {led_num: 22, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+					//send_switch(Led {led_num: FIRST_LEDS_ROW[2], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
 				Page::Op4 => {
-					send_switch(Led {led_num: 23, led_color: 122, neutral_color: 124}, SECOND_LEDS_ROW, conn)
+					//send_switch(Led {led_num: FIRST_LEDS_ROW[3], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
 			}
 		}

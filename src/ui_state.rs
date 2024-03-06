@@ -19,8 +19,10 @@ pub struct UIState {
 	pub op_subpage: Arc<Mutex<OpPage>>
 }
 
-pub enum UIEvent {
+pub enum InputEvent {
 	PageChange(Page),
 	OpSubpageChange(OpPage),
-	LFO(f64)
+	LFO(f64),
+	NoteOn {note: u8, velocity: u8},
+	NoteOff {note: u8}
 }
