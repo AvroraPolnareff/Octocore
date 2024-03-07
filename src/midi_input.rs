@@ -7,7 +7,7 @@ use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::input;
 use crate::synth::pitch_bend_factor;
 use crate::ui_state::{OpPage, Page, InputEvent, UIState};
-use crate::voice_params::{OpParams, VoiceParams};
+use crate::voice_params::{OpParams, SynthParams};
 use std::sync::mpsc::{Sender};
 use anyhow::bail;
 use read_input::prelude::*;
@@ -84,7 +84,7 @@ pub fn pots_to_sub_page(pot: &Pot, op_subpage: OpPage, op_params: &OpParams) {
 	}
 }
 
-pub fn pots_to_controls(control: ControlChange, voice_params: &VoiceParams, ui: &UIState) {
+pub fn pots_to_controls(control: ControlChange, voice_params: &SynthParams, ui: &UIState) {
 	let page = ui.page.lock().unwrap();
 	let op_subpage = ui.op_subpage.lock().unwrap();
 
@@ -117,7 +117,7 @@ pub fn pots_to_controls(control: ControlChange, voice_params: &VoiceParams, ui: 
 
 pub fn midi_to_params(
 	midi_msg: MidiMsg,
-	voice_params: &VoiceParams,
+	voice_params: &SynthParams,
 	ui: &UIState,
 	in_tx: &Sender<InputEvent>
 ) {
@@ -133,9 +133,9 @@ pub fn midi_to_params(
 				ChannelVoiceMsg::NoteOff { note, velocity: _ } => {
 					in_tx.send(InputEvent::NoteOff {note}).unwrap()
 				}
-				ChannelVoiceMsg::PitchBend { bend } => {
-					voice_params.pitch_bend.set_value(pitch_bend_factor(bend));
-				}
+				// ChannelVoiceMsg::PitchBend { bend } => {
+				// 	voice_params.pitch_bend.set_value(pitch_bend_factor(bend));
+				// }
 				ChannelVoiceMsg::ControlChange { control } => {
 					control_to_pages(control, ui, &in_tx);
 					pots_to_controls(control, voice_params, ui);
@@ -157,7 +157,7 @@ pub fn midi_to_params(
 pub fn run_input(
 	midi_in: MidiInput,
 	in_port: MidiInputPort,
-	voice_params: VoiceParams,
+	voice_params: SynthParams,
 	ui: UIState,
 	in_tx: Sender<InputEvent>
 ) -> anyhow::Result<()> {

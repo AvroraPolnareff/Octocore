@@ -35,15 +35,12 @@ impl Default for OpParams {
   }
 }
 
-
 #[derive(Clone)]
 pub struct VoiceParams {
   pub pitch: Shared<f64>,
   pub volume: Shared<f64>,
   pub pitch_bend: Shared<f64>,
   pub control: Shared<f64>,
-  pub op1: OpParams,
-  pub op2: OpParams
 }
 
 impl Default for VoiceParams {
@@ -53,6 +50,21 @@ impl Default for VoiceParams {
       volume: shared(0.0),
       pitch_bend: shared(0.0),
       control: shared(0.0),
+    }
+  }
+}
+
+#[derive(Clone)]
+pub struct SynthParams {
+  pub voice_params: Vec<VoiceParams>,
+  pub op1: OpParams,
+  pub op2: OpParams
+}
+
+impl Default for SynthParams {
+  fn default() -> Self {
+    Self {
+      voice_params: vec![VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default()],
       op1: OpParams::default(),
       op2: OpParams::default()
     }

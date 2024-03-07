@@ -3,7 +3,7 @@ use once_cell::sync::OnceCell;
 
 use skia_safe::{surfaces, Color, Paint, PaintStyle, Path, Font, FontMgr, FontStyle, Typeface, ImageInfo, ColorType, AlphaType, ColorSpace, Point, Canvas};
 use crate::ui_state::{OpPage, Page, UIState};
-use crate::voice_params::VoiceParams;
+use crate::voice_params::SynthParams;
 
 
 pub fn default_typeface() -> Typeface {
@@ -46,7 +46,7 @@ pub fn render_param(
 
 }
 
-pub fn render_image(params: &VoiceParams, state: &UIState, pixels: &mut [u8; 2048 * 160]) -> [u8; 2048 * 160] {
+pub fn render_image(params: &SynthParams, state: &UIState, pixels: &mut [u8; 2048 * 160]) -> [u8; 2048 * 160] {
   let image_info = ImageInfo::new((960, 160), ColorType::RGB565, AlphaType::Opaque, ColorSpace::new_srgb());
   let mut surface = surfaces::raster(&image_info, 2048usize, None).expect("surface");
   let canvas = surface.canvas();

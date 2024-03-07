@@ -4,12 +4,12 @@ use fundsp::audionode::{Pipe, Stack};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
 use fundsp::envelope::EnvelopeIn;
-use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64, pass, sine_hz};
+use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64, pass, sine_hz, sum};
 use fundsp::hacker32::Var;
 use fundsp::prelude::U5;
 use crate::adsr::adsr;
 use crate::Poly::VoiceIndex;
-use crate::voice_params::{AdsrParams, VoiceParams};
+use crate::voice_params::{AdsrParams, SynthParams};
 
 
 pub fn c_adsr(
@@ -34,20 +34,20 @@ pub fn c_adsr(
 }
 
 pub fn create_sound(
-	voice_params: &VoiceParams,
+	synth_params: &SynthParams,
 	voice_index: &VoiceIndex
 ) -> Box<dyn AudioUnit64> {
-
+	let voice_params = &synth_params.voice_params[*voice_index as usize];
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
-	let modulator = bf() * var(&voice_params.op2.ratio)
-		>> sine() * c_adsr(&voice_params.op2.adsr_params, &voice_params.control)
-		* var(&voice_params.op2.volume);
-	let bff = || bf() * var(&voice_params.op1.ratio);
+	let modulator = bf() * var(&synth_params.op2.ratio)
+		>> sine() * c_adsr(&synth_params.op2.adsr_params, &voice_params.control)
+		* var(&synth_params.op2.volume);
+	let bff = || bf() * var(&synth_params.op1.ratio);
 	let base_tone =
-		modulator * bff() + bff() >> sine() * var(&voice_params.op1.volume);
+		modulator * bff() + bff() >> sine() * var(&synth_params.op1.volume);
 
 	Box::new(
-		base_tone * c_adsr(&voice_params.op1.adsr_params, &voice_params.control) * var(&voice_params.volume)
+		base_tone * c_adsr(&synth_params.op1.adsr_params, &voice_params.control) * var(&voice_params.volume)
 	)
 }
 
