@@ -24,7 +24,7 @@ impl Push2 {
     Self { device_handle: None }
   }
   pub fn connect (&mut self) {
-    let mut context = Context::new().unwrap();
+    let context = Context::new().unwrap();
     let device = context.devices().unwrap().iter()
       .find(|device| {
         let descriptor = device.device_descriptor().unwrap();
@@ -43,7 +43,6 @@ impl Push2 {
         frame[0] = pixel[0];
         frame[1] = pixel[1];
       }
-      //line.simd_iter(u8s(0)).simd_map(|v| v ^ u32s(0xFFE7F3E7).be_u8s()).scalar_fill(line);
       for frame in line.chunks_exact_mut(4) {
         frame[0] = XOR_ENCODE_VALUES[0] ^ frame[0];
         frame[1] = XOR_ENCODE_VALUES[1] ^ frame[1];
@@ -54,8 +53,8 @@ impl Push2 {
     // let elapsed = now.elapsed();
     // println!("Elapsed: {:.2?}", elapsed);
     let handle = self.device_handle.as_ref().expect("Device is not connected");
-    handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(1));
-    handle.write_bulk(1, image, Duration::from_millis(1));
+    handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(8)).unwrap();
+    handle.write_bulk(1, image, Duration::from_millis(8)).unwrap();
   }
 }
 

@@ -1,4 +1,5 @@
 use fundsp::hacker::{Shared, shared};
+use crate::poly::VoiceIndex;
 
 #[derive(Clone)]
 pub struct AdsrParams {
@@ -64,7 +65,17 @@ pub struct SynthParams {
 impl Default for SynthParams {
   fn default() -> Self {
     Self {
-      voice_params: vec![VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default(), VoiceParams::default()],
+      voice_params: vec![VoiceParams::default(); 8],
+      op1: OpParams::default(),
+      op2: OpParams::default()
+    }
+  }
+}
+
+impl SynthParams {
+  pub fn new(voice_count: VoiceIndex) -> Self {
+    Self {
+      voice_params: (0 .. voice_count).map(|_| VoiceParams::default()).collect(),
       op1: OpParams::default(),
       op2: OpParams::default()
     }

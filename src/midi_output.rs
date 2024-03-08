@@ -11,7 +11,7 @@ pub fn get_midi_out_device(midi_out: &mut MidiOutput) -> anyhow::Result<MidiOutp
 	} else {
 			let (port, _) = out_ports.iter()
 				.map(|port| (port, midi_out.port_name(port).unwrap()))
-				.find(|(_, name)| name == "Ableton Push 2")
+				.find(|(_, name)| name.contains("Ableton Push 2"))
 				.expect("Can't find Ableton Push 2 device");
 		Ok(port.clone())
 	}
@@ -97,6 +97,7 @@ pub fn get_midi_out_connection(
 	out_port: &MidiOutputPort
 ) -> MidiOutputConnection {
 	let out_port_name = midi_out.port_name(out_port).expect("Cannot get output name");
+	println!("Connection open, reading input from '{out_port_name}'");
 	midi_out.connect(out_port, "midir-write-output")
 		.expect(&format!("Error while openening connection {out_port_name}"))
 }

@@ -45,8 +45,8 @@ impl MonoPoly {
 	pub fn on_voice_off(&mut self, note: u8, voice_params: &Vec<VoiceParams>) {
 			
 		self.voices.iter().enumerate()
-			.filter(|(i, voice)| voice.note == note)
-			.for_each(|(i, voice)| {
+			.filter(|(_, voice)| voice.note == note)
+			.for_each(|(i, _)| {
 				let voice_params = &voice_params[i];
 				voice_params.control.set_value(-1.0);
 			});

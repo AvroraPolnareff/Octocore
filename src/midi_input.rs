@@ -1,11 +1,9 @@
 use fundsp::Float;
 use fundsp::hacker::Atomic;
-use fundsp::prelude::midi_hz;
 use fundsp::shared::Shared;
 use midi_msg::{ChannelVoiceMsg, ControlChange, MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::input;
-use crate::synth::pitch_bend_factor;
 use crate::ui_state::{OpPage, Page, InputEvent, UIState};
 use crate::voice_params::{OpParams, SynthParams};
 use std::sync::mpsc::{Sender};
@@ -189,7 +187,7 @@ pub fn get_midi_device(midi_in: &mut MidiInput) -> anyhow::Result<MidiInputPort>
 	} else {
 		let (port, _) = in_ports.iter()
 			.map(|port| (port, midi_in.port_name(port).unwrap()))
-			.find(|(_, name)| name == "Ableton Push 2")
+			.find(|(_, name)| name.contains("Ableton Push 2"))
 			.expect("Can't find Ableton Push 2 device");
 		Ok(port.clone())
 	}

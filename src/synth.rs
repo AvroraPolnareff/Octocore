@@ -1,43 +1,32 @@
 use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use fundsp::audionode::{Pipe, Stack};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
-use fundsp::envelope::EnvelopeIn;
-use fundsp::hacker::{Frame, sine, var, Shared, NetBackend64, pass, sine_hz, sum};
-use fundsp::hacker32::Var;
-use fundsp::prelude::U5;
+use fundsp::hacker::{sine, var, Shared, NetBackend64, pass, sine_hz, AudioNode, U1, U0};
+
 use crate::adsr::adsr;
-use crate::Poly::VoiceIndex;
+use crate::poly::VoiceIndex;
 use crate::voice_params::{AdsrParams, SynthParams};
 
 
 pub fn c_adsr(
 	adsr_params: &AdsrParams,
 	control: &Shared<f64>
-) -> An<Pipe<
-	f64, Stack<
-		f64,
-		Stack<f64, Stack<f64, Stack<f64, Var<f64>, Var<f64>>, Var<f64>>, Var<f64>>,
-		Var<f64>
-	>,
-	EnvelopeIn<
-		f64, f64, impl Fn(f64, &Frame<f64, U5>) -> f64 + Sized + Clone + Sized, U5, f64>
->> {
+) -> An<impl AudioNode<Inputs = U0, Outputs = U1, Sample = f64>> {
 	(
 		var(&adsr_params.a)
 			| var(&adsr_params.d)
 			| var(&adsr_params.s)
 			| var(&adsr_params.r)
 			| var(&control)
-	)>> adsr()
+	) >> adsr()
 }
 
 pub fn create_sound(
 	synth_params: &SynthParams,
-	voice_index: &VoiceIndex
+	voice_index: VoiceIndex
 ) -> Box<dyn AudioUnit64> {
-	let voice_params = &synth_params.voice_params[*voice_index as usize];
+	let voice_params = &synth_params.voice_params[voice_index as usize];
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
 	let modulator = bf() * var(&synth_params.op2.ratio)
 		>> sine() * c_adsr(&synth_params.op2.adsr_params, &voice_params.control)
