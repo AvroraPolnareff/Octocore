@@ -2,9 +2,10 @@ use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
-use fundsp::hacker::{sine, var, Shared, NetBackend64, pass, sine_hz, AudioNode, U1, U0, update};
+use fundsp::hacker::{sine, var, Shared, NetBackend64, pass, sine_hz, AudioNode, U1, U0};
 
 use crate::adsr::adsr;
+use crate::param::param;
 use crate::poly::VoiceIndex;
 use crate::synth_params::{AdsrParams, SynthParams};
 
@@ -28,10 +29,10 @@ pub fn create_sound(
 ) -> Box<dyn AudioUnit64> {
 	let voice_params = &synth_params.voice_params[voice_index as usize];
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
-	let modulator = bf() * var(&synth_params.op2.ratio)
+	let modulator = bf() * param(&synth_params.op2.ratio)
 		>> sine() * c_adsr(&synth_params.op2.adsr_params, &voice_params.control)
 		* var(&synth_params.op2.volume);
-	let bff = || bf() * var(&synth_params.op1.ratio);
+	let bff = || bf() * param(&synth_params.op1.ratio);
 	let base_tone =
 		modulator * bff() + bff() >> sine() * var(&synth_params.op1.volume);
 

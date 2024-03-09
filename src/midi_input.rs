@@ -9,6 +9,7 @@ use crate::synth_params::{OpParams, SynthParams};
 use std::sync::mpsc::{Sender};
 use anyhow::bail;
 use read_input::prelude::*;
+use crate::param::Param;
 
 pub fn encoder_to_value(input: u8, value: f64, intensity: f64) -> f64 {
 	if input > 64 { value + (-128 + input as i8) as f64 / intensity }
@@ -18,6 +19,12 @@ pub fn encoder_to_value(input: u8, value: f64, intensity: f64) -> f64 {
 pub fn encoder_to_shared<F: Float + Atomic>(input: u8, value: &Shared<F>, intensity: F) {
 	value.set_value(
 		F::from_f64(encoder_to_value(input, value.value().to_f64(), intensity.to_f64()))
+	)
+}
+
+pub fn encoder_to_param(input: u8, value: &Param, intensity: f64) {
+	value.set_value(
+		encoder_to_value(input, value.value(), intensity)
 	)
 }
 
@@ -63,7 +70,7 @@ pub fn pots_to_sub_page(pot: &Pot, op_subpage: OpPage, op_params: &OpParams) {
 			if let Pot::MainPot(id, value) = pot {
 				match id {
 					1 => { encoder_to_shared(*value, &op_params.volume, 16.) }
-					2 => { encoder_to_shared(*value, &op_params.ratio, 1.) }
+					2 => { encoder_to_param(*value, &op_params.ratio, 1.) }
 					_ => {}
 				}
 			}

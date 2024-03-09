@@ -1,24 +1,24 @@
 use fundsp::audionode::{AudioNode, Frame};
 use fundsp::math::clamp;
-use fundsp::prelude::{Shared, shared};
+use fundsp::prelude::{An, Shared, shared};
 use typenum::{U0, U1};
 
 #[derive(Clone)]
 pub struct Param {
 	value: Shared<f64>,
 	clamp: (f64, f64),
-	process: fn(value: f64) -> f64,
+	process: Option<(fn (value: f64) -> f64)>,
 	modulation: Shared<f64>
 }
 
 impl Param {
 	pub fn new(
-		value: Shared<f64>,
+		value: f64,
 		clamp: (f64, f64),
-		process: fn (value: f64) -> f64
+		process: Option<(fn (value: f64) -> f64)>
 	) -> Self {
 		Self {
-			value,
+			value: shared(value),
 			clamp,
 			process,
 			modulation: shared(0.0)
@@ -86,6 +86,6 @@ impl AudioNode for ParamVar {
 	}
 }
 
-pub fn param(param: &Param) -> ParamVar {
-	ParamVar::new(param)
+pub fn param(param: &Param) -> An<ParamVar> {
+	An(ParamVar::new(param))
 }
