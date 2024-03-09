@@ -1,4 +1,4 @@
-use std::iter::repeat;
+use std::iter::{repeat, repeat_with};
 use fundsp::hacker::{Shared, shared};
 use crate::param::{Param};
 use crate::poly::VoiceIndex;
@@ -67,7 +67,7 @@ pub struct SynthParams {
 impl Default for SynthParams {
   fn default() -> Self {
     Self {
-      voice_params: repeat(VoiceParams::default()).take(8 as usize).collect(),
+      voice_params: repeat_with(|| VoiceParams::default()).take(8 as usize).collect(),
       op1: OpParams::default(),
       op2: OpParams::default()
     }
@@ -77,7 +77,7 @@ impl Default for SynthParams {
 impl SynthParams {
   pub fn new(voice_count: VoiceIndex) -> Self {
     Self {
-      voice_params: (0 .. voice_count).map(|_| VoiceParams::default()).collect(),
+      voice_params: repeat_with(|| VoiceParams::default()).take(voice_count as usize).collect(),
       op1: OpParams::default(),
       op2: OpParams::default()
     }
