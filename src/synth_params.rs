@@ -24,7 +24,7 @@ impl Default for AdsrParams {
 #[derive(Clone)]
 pub struct OpParams {
   pub ratio: Param,
-  pub volume: Shared<f64>,
+  pub volume: Param,
   pub adsr_params: AdsrParams
 }
 
@@ -32,7 +32,7 @@ impl Default for OpParams {
   fn default() -> Self {
     Self {
       ratio: Param::new(1.0, (1.0, 999.0), None),
-      volume: shared(0.5),
+      volume: Param::new(0.8, (0.0, 999.0), None),
       adsr_params: AdsrParams::default()
     }
   }
