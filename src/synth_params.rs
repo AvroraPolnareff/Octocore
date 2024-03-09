@@ -1,6 +1,6 @@
 use std::iter::repeat;
 use fundsp::hacker::{Shared, shared};
-use crate::param::{Param, ParamVar};
+use crate::param::{Param};
 use crate::poly::VoiceIndex;
 
 #[derive(Clone)]
@@ -77,7 +77,7 @@ impl Default for SynthParams {
 impl SynthParams {
   pub fn new(voice_count: VoiceIndex) -> Self {
     Self {
-      voice_params: repeat(VoiceParams::default()).take(voice_count as usize).collect(),
+      voice_params: (0 .. voice_count).map(|_| VoiceParams::default()).collect(),
       op1: OpParams::default(),
       op2: OpParams::default()
     }
