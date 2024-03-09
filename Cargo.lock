@@ -3,23 +3,6 @@
 version = 3
 
 [[package]]
-name = "Octocore"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cpal",
- "fundsp",
- "midi-msg",
- "midir",
- "once_cell",
- "read_input",
- "rgb565",
- "rusb",
- "skia-safe",
- "typenum",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -757,6 +740,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8bb09a4a2b1d668170cfe0a7d5bc103f8999fb316c98099b6a9939c9f2e79d"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "octocore"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cpal",
+ "fundsp",
+ "midi-msg",
+ "midir",
+ "once_cell",
+ "read_input",
+ "rgb565",
+ "rusb",
+ "skia-safe",
+ "typenum",
 ]
 
 [[package]]

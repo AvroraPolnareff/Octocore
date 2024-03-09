@@ -12,6 +12,8 @@ mod modulation;
 
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 use fundsp::hacker32::{Net64};
 use fundsp::hacker::{NodeId, pass, sink, sum, U128};
 use midir::{MidiInput, MidiOutput};
@@ -32,7 +34,7 @@ fn render_loop(synth_params: SynthParams, uistate: UIState) {
     push.connect();
     loop {
       let mut pixels = render_image(&synth_params, uistate.clone(), &mut pixels);
-      push.draw_image(&mut pixels);
+      push.draw_image(&mut pixels).unwrap();
     }
   });
 }
@@ -82,6 +84,7 @@ fn main() -> anyhow::Result<()> {
           InputEvent::OpSubpageChange(_) => {}
           InputEvent::LFO(dest) => {
             println!("{}", dest.name);
+            dest.dest.set_modulation(0.0);
             net.replace(dummy_dest, sine_lfo(&dest.dest));
             net.commit();
           }
