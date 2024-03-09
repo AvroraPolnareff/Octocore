@@ -2,11 +2,11 @@ use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
-use fundsp::hacker::{sine, var, Shared, NetBackend64, pass, sine_hz, AudioNode, U1, U0};
+use fundsp::hacker::{sine, var, Shared, NetBackend64, pass, sine_hz, AudioNode, U1, U0, update};
 
 use crate::adsr::adsr;
 use crate::poly::VoiceIndex;
-use crate::voice_params::{AdsrParams, SynthParams};
+use crate::synth_params::{AdsrParams, SynthParams};
 
 
 pub fn c_adsr(

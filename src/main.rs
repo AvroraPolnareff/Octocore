@@ -1,4 +1,4 @@
-mod r#voice_params;
+mod synth_params;
 mod graphix;
 mod push;
 mod synth;
@@ -7,6 +7,7 @@ mod adsr;
 mod midi_input;
 mod midi_output;
 mod poly;
+mod param;
 
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel};
@@ -20,7 +21,7 @@ use crate::poly::{MonoPoly};
 use crate::push::{Push2};
 use crate::synth::{create_sound, run_output, sine_lfo};
 use crate::ui_state::{OpPage, Page, InputEvent, UIState};
-use crate::voice_params::SynthParams;
+use crate::synth_params::SynthParams;
 
 fn render_loop(synth_params: SynthParams, uistate: UIState) {
   std::thread::spawn(move || {

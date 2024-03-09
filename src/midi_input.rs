@@ -5,7 +5,7 @@ use midi_msg::{ChannelVoiceMsg, ControlChange, MidiMsg};
 use midir::{Ignore, MidiInput, MidiInputPort};
 use read_input::prelude::input;
 use crate::ui_state::{OpPage, Page, InputEvent, UIState};
-use crate::voice_params::{OpParams, SynthParams};
+use crate::synth_params::{OpParams, SynthParams};
 use std::sync::mpsc::{Sender};
 use anyhow::bail;
 use read_input::prelude::*;

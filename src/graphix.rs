@@ -2,7 +2,7 @@ use once_cell::sync::OnceCell;
 
 use skia_safe::{surfaces, Color, Paint, Font, FontMgr, FontStyle, Typeface, ImageInfo, ColorType, AlphaType, ColorSpace, Point, Canvas};
 use crate::ui_state::{OpPage, Page, UIState};
-use crate::voice_params::SynthParams;
+use crate::synth_params::SynthParams;
 
 
 pub fn default_typeface() -> Typeface {
