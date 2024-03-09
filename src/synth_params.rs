@@ -1,4 +1,6 @@
+use std::iter::{repeat_with};
 use fundsp::hacker::{Shared, shared};
+use crate::param::{Param};
 use crate::poly::VoiceIndex;
 
 #[derive(Clone)]
@@ -21,16 +23,16 @@ impl Default for AdsrParams {
 
 #[derive(Clone)]
 pub struct OpParams {
-  pub ratio: Shared<f64>,
-  pub volume: Shared<f64>,
+  pub ratio: Param,
+  pub volume: Param,
   pub adsr_params: AdsrParams
 }
 
 impl Default for OpParams {
   fn default() -> Self {
     Self {
-      ratio: shared(1.0),
-      volume: shared(0.5),
+      ratio: Param::new(1.0, (1.0, 999.0), None),
+      volume: Param::new(0.8, (0.0, 999.0), None),
       adsr_params: AdsrParams::default()
     }
   }
@@ -65,7 +67,7 @@ pub struct SynthParams {
 impl Default for SynthParams {
   fn default() -> Self {
     Self {
-      voice_params: vec![VoiceParams::default(); 8],
+      voice_params: repeat_with(|| VoiceParams::default()).take(8 as usize).collect(),
       op1: OpParams::default(),
       op2: OpParams::default()
     }
@@ -75,7 +77,7 @@ impl Default for SynthParams {
 impl SynthParams {
   pub fn new(voice_count: VoiceIndex) -> Self {
     Self {
-      voice_params: (0 .. voice_count).map(|_| VoiceParams::default()).collect(),
+      voice_params: repeat_with(|| VoiceParams::default()).take(voice_count as usize).collect(),
       op1: OpParams::default(),
       op2: OpParams::default()
     }

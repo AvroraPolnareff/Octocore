@@ -1,7 +1,6 @@
 use std::time::{Duration};
-
 use rgb565::Rgb565;
-use rusb::{Context, DeviceHandle, UsbContext};
+use rusb::{Context, DeviceHandle, UsbContext, Error as UsbError};
 
 static ABLETON_VENDOR_ID: u16 = 0x2982;
 static PUSH_2_PRODUCT_ID: u16 = 0x1967;
@@ -35,7 +34,7 @@ impl Push2 {
     self.device_handle = Some(device_handle)
 
   }
-  pub fn draw_image (&self, image: &mut [u8]) {
+  pub fn draw_image (&self, image: &mut [u8]) -> Result<usize, UsbError> {
     // todo too slow ;_;
     for line in image.chunks_mut(960) {
       for frame in line.chunks_exact_mut(2) {
@@ -53,8 +52,8 @@ impl Push2 {
     // let elapsed = now.elapsed();
     // println!("Elapsed: {:.2?}", elapsed);
     let handle = self.device_handle.as_ref().expect("Device is not connected");
-    handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(8)).unwrap();
-    handle.write_bulk(1, image, Duration::from_millis(8)).unwrap();
+    handle.write_bulk(1, &FRAME_HEADER, Duration::from_millis(8))?;
+    handle.write_bulk(1, image, Duration::from_millis(8))
   }
 }
 

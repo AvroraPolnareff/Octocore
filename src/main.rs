@@ -1,5 +1,5 @@
-mod r#voice_params;
-mod graphix;
+mod synth_params;
+mod display;
 mod push;
 mod synth;
 mod ui_state;
@@ -7,20 +7,23 @@ mod adsr;
 mod midi_input;
 mod midi_output;
 mod poly;
+mod param;
+mod modulation;
 
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel};
 use fundsp::hacker32::{Net64};
-use fundsp::hacker::{NodeId, pass, sum, U128};
+use fundsp::hacker::{NodeId, pass, sink, sum, U128};
 use midir::{MidiInput, MidiOutput};
-use crate::graphix::render_image;
+use crate::display::render_image;
 use crate::midi_input::{get_midi_device, run_input};
 use crate::midi_output::{get_midi_out_device, get_midi_out_connection, init_midi_ui, send_ui_midi};
+use crate::modulation::create_modulation_list;
 use crate::poly::{MonoPoly};
 use crate::push::{Push2};
 use crate::synth::{create_sound, run_output, sine_lfo};
 use crate::ui_state::{OpPage, Page, InputEvent, UIState};
-use crate::voice_params::SynthParams;
+use crate::synth_params::SynthParams;
 
 fn render_loop(synth_params: SynthParams, uistate: UIState) {
   std::thread::spawn(move || {
@@ -41,10 +44,12 @@ fn main() -> anyhow::Result<()> {
   let out_port = get_midi_out_device(&mut midi_out)?;
   let mut mono_poly = MonoPoly::new(8);
   let synth_params = SynthParams::new(mono_poly.voice_size);
+  let dests = create_modulation_list(&synth_params);
 
   let ui_state = UIState {
     page: Arc::new(Mutex::new(Page::Op1)),
-    op_subpage: Arc::new(Mutex::new(OpPage::Tone))
+    op_subpage: Arc::new(Mutex::new(OpPage::Tone)),
+    lfo_dest: Arc::new(Mutex::new(dests[0].clone()))
   };
 
   render_loop(synth_params.clone(), ui_state.clone());
@@ -52,15 +57,17 @@ fn main() -> anyhow::Result<()> {
   let (ui_tx, ui_rx) = channel::<InputEvent>();
   
   let mut net = Net64::new(0, 1);
-  let dummy_id = net.push(Box::new(sum::<U128, _, _>(|_| pass())));
-  net.connect_output(dummy_id, 0, 0);
+  let voice_mixer_id = net.push(Box::new(sum::<U128, _, _>(|_| pass())));
+  net.connect_output(voice_mixer_id, 0, 0);
   
   let voice_ids: Vec<(usize, NodeId)> = (0 .. mono_poly.voice_size)
     .map(|i| net.push(create_sound(&synth_params, i)))
     .enumerate().collect();
   for (i, id) in voice_ids {
-    net.connect(id, 0, dummy_id, i)
+    net.connect(id, 0, voice_mixer_id, i)
   }
+  
+  let dummy_dest = net.push(sine_lfo(&synth_params.op2.volume));
 
   let mut connection = get_midi_out_connection(midi_out, &out_port);
   run_output(net.backend());
@@ -73,12 +80,9 @@ fn main() -> anyhow::Result<()> {
         match event {
           InputEvent::PageChange(_) => {}
           InputEvent::OpSubpageChange(_) => {}
-          InputEvent::LFO(x) => {
-            if x > 0. {
-              net.replace(dummy_id, sine_lfo());
-            } else {
-              net.replace(dummy_id, Box::new(pass()));
-            }
+          InputEvent::LFO(dest) => {
+            println!("{}", dest.name);
+            net.replace(dummy_dest, sine_lfo(&dest.dest));
             net.commit();
           }
           InputEvent::NoteOn {note, velocity} => {
@@ -92,6 +96,6 @@ fn main() -> anyhow::Result<()> {
     });
   }
   
-  run_input(midi_in, in_port, synth_params, ui_state, ui_tx.clone())
+  run_input(midi_in, in_port, synth_params, ui_state, ui_tx.clone(), dests.to_vec())
 }
 

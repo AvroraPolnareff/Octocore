@@ -1,5 +1,5 @@
 use fundsp::hacker32::midi_hz;
-use crate::voice_params::VoiceParams;
+use crate::synth_params::VoiceParams;
 
 pub type VoiceIndex = u8;
 
