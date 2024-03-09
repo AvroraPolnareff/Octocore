@@ -24,7 +24,7 @@ pub fn encoder_to_shared<F: Float + Atomic>(input: u8, value: &Shared<F>, intens
 
 pub fn encoder_to_param(input: u8, value: &Param, intensity: f64) {
 	value.set_value(
-		encoder_to_value(input, value.value(), intensity)
+		encoder_to_value(input, value.unmodulated_value(), intensity)
 	)
 }
 

@@ -1,4 +1,4 @@
-use std::iter::{repeat, repeat_with};
+use std::iter::{repeat_with};
 use fundsp::hacker::{Shared, shared};
 use crate::param::{Param};
 use crate::poly::VoiceIndex;

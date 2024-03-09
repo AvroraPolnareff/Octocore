@@ -53,15 +53,17 @@ fn main() -> anyhow::Result<()> {
   let (ui_tx, ui_rx) = channel::<InputEvent>();
   
   let mut net = Net64::new(0, 1);
-  let dummy_id = net.push(Box::new(sum::<U128, _, _>(|_| pass())));
-  net.connect_output(dummy_id, 0, 0);
+  let voice_mixer_id = net.push(Box::new(sum::<U128, _, _>(|_| pass())));
+  net.connect_output(voice_mixer_id, 0, 0);
   
   let voice_ids: Vec<(usize, NodeId)> = (0 .. mono_poly.voice_size)
     .map(|i| net.push(create_sound(&synth_params, i)))
     .enumerate().collect();
   for (i, id) in voice_ids {
-    net.connect(id, 0, dummy_id, i)
+    net.connect(id, 0, voice_mixer_id, i)
   }
+  
+  net.push(sine_lfo(&synth_params.op1.ratio));
 
   let mut connection = get_midi_out_connection(midi_out, &out_port);
   run_output(net.backend());
@@ -75,12 +77,6 @@ fn main() -> anyhow::Result<()> {
           InputEvent::PageChange(_) => {}
           InputEvent::OpSubpageChange(_) => {}
           InputEvent::LFO(x) => {
-            if x > 0. {
-              net.replace(dummy_id, sine_lfo());
-            } else {
-              net.replace(dummy_id, Box::new(pass()));
-            }
-            net.commit();
           }
           InputEvent::NoteOn {note, velocity} => {
             mono_poly.on_voice_on(note, velocity, &synth_params.voice_params)

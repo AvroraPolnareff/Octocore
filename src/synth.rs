@@ -5,7 +5,7 @@ use fundsp::combinator::An;
 use fundsp::hacker::{sine, var, Shared, NetBackend64, pass, sine_hz, AudioNode, U1, U0};
 
 use crate::adsr::adsr;
-use crate::param::param;
+use crate::param::{param, Param, param_sink};
 use crate::poly::VoiceIndex;
 use crate::synth_params::{AdsrParams, SynthParams};
 
@@ -41,9 +41,9 @@ pub fn create_sound(
 	)
 }
 
-pub fn sine_lfo() -> Box<dyn AudioUnit64> {
+pub fn sine_lfo(param: &Param) -> Box<dyn AudioUnit64> {
 	Box::new(
-		pass() * (sine_hz(0.5))
+		sine_hz(0.5) * 10.0 >> param_sink(param)
 	)
 }
 

@@ -29,6 +29,10 @@ impl Param {
 		self.value.set_value(clamp(self.clamp.0, self.clamp.1, value))
 	}
 	
+	pub fn unmodulated_value(&self) -> f64 {
+		self.value.value()
+	}
+	
 	pub fn set_modulation(&self, value: f64) { self.modulation.set_value(value) }
 	
 	pub fn value(&self) -> f64 {
@@ -88,4 +92,56 @@ impl AudioNode for ParamVar {
 
 pub fn param(param: &Param) -> An<ParamVar> {
 	An(ParamVar::new(param))
+}
+
+#[derive(Clone)]
+pub struct ParamSink {
+	param: Param,
+}
+
+impl ParamSink {
+	pub fn new(param: &Param) -> Self {
+		Self {
+			param: param.clone(),
+		}
+	}
+
+	/// Set the value of this variable.
+	pub fn set_value(&self, value: f64) {
+		self.param.set_value(value)
+	}
+
+	/// Get the value of this variable.
+	pub fn value(&self) -> f64 { self.param.value() }
+}
+
+impl AudioNode for ParamSink {
+	const ID: u64 = 1338;
+
+	type Sample = f64;
+	type Inputs = U1;
+	type Outputs = U0;
+	type Setting = ();
+
+	#[inline]
+	fn tick(
+		&mut self,
+		input: &Frame<Self::Sample, Self::Inputs>,
+	) -> Frame<Self::Sample, Self::Outputs> {
+		self.param.set_modulation(input[0]);
+		Frame::default()
+	}
+
+	fn process(
+		&mut self,
+		_size: usize,
+		input: &[&[Self::Sample]],
+		_output: &mut [&mut [Self::Sample]],
+	) {
+		self.param.set_modulation(input[0][0]);
+	}
+}
+
+pub fn param_sink(param: &Param) -> An<ParamSink> {
+	An(ParamSink::new(param))
 }
