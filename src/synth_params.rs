@@ -32,7 +32,7 @@ impl Default for OpParams {
   fn default() -> Self {
     Self {
       ratio: Param::new(1.0, (1.0, 999.0), None),
-      volume: Param::new(0.8, (0.0, 999.0), None),
+      volume: Param::new(0.5, (0.0, 999.0), None),
       adsr_params: AdsrParams::default()
     }
   }
@@ -60,16 +60,14 @@ impl Default for VoiceParams {
 #[derive(Clone)]
 pub struct SynthParams {
   pub voice_params: Vec<VoiceParams>,
-  pub op1: OpParams,
-  pub op2: OpParams
+  pub ops: Vec<OpParams>,
 }
 
 impl Default for SynthParams {
   fn default() -> Self {
     Self {
-      voice_params: repeat_with(|| VoiceParams::default()).take(8 as usize).collect(),
-      op1: OpParams::default(),
-      op2: OpParams::default()
+      voice_params: repeat_with(|| VoiceParams::default()).take(8).collect(),
+      ops: repeat_with(|| OpParams::default()).take(4).collect(),
     }
   }
 }
@@ -78,8 +76,7 @@ impl SynthParams {
   pub fn new(voice_count: VoiceIndex) -> Self {
     Self {
       voice_params: repeat_with(|| VoiceParams::default()).take(voice_count as usize).collect(),
-      op1: OpParams::default(),
-      op2: OpParams::default()
+      ops: repeat_with(|| OpParams::default()).take(4).collect()
     }
   }
 }

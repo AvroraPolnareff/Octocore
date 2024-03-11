@@ -63,33 +63,17 @@ pub fn render_image(params: &SynthParams, state: UIState, pixels: &mut [u8; 2048
   let dest = state.lfo_dest.lock().unwrap();
   let calc_param_pos = |ord: f32| (120. * ord - 120. / 2. - 40., 60.);
   match *page {
-    Page::Op1 => {
+    Page::Op(x) => {
       match *op_subpage {
         OpPage::Tone => {
-          render_param("Volume", fmt_float(params.op1.volume.value()), calc_param_pos(1.), canvas);
-          render_param("Ratio", fmt_float(params.op1.ratio.value()), calc_param_pos(2.), canvas);
-
+          render_param("Volume", fmt_float(params.ops[x as usize].volume.value()), calc_param_pos(1.), canvas);
+          render_param("Ratio", fmt_float(params.ops[x as usize].ratio.value()), calc_param_pos(2.), canvas);
         }
         OpPage::Amp => {
-          render_param("Attack", fmt_float(params.op1.adsr_params.a.value()), calc_param_pos(1.), canvas);
-          render_param("Decay", fmt_float(params.op1.adsr_params.d.value()), calc_param_pos(2.), canvas);
-          render_param("Sustain", fmt_float(params.op1.adsr_params.s.value()), calc_param_pos(3.), canvas);
-          render_param("Release", fmt_float(params.op1.adsr_params.r.value()), calc_param_pos(4.), canvas);
-        }
-      }
-    }
-    Page::Op2 => {
-      match *op_subpage {
-        OpPage::Tone => {
-          render_param("Volume", fmt_float(params.op2.volume.value()), calc_param_pos(1.), canvas);
-          render_param("Ratio", fmt_float(params.op2.ratio.value()), calc_param_pos(2.), canvas);
-
-        }
-        OpPage::Amp => {
-          render_param("Attack", fmt_float(params.op2.adsr_params.a.value()), calc_param_pos(1.), canvas);
-          render_param("Decay", fmt_float(params.op2.adsr_params.d.value()), calc_param_pos(2.), canvas);
-          render_param("Sustain", fmt_float(params.op2.adsr_params.s.value()), calc_param_pos(3.), canvas);
-          render_param("Release", fmt_float(params.op2.adsr_params.r.value()), calc_param_pos(4.), canvas);
+          render_param("Attack", fmt_float(params.ops[x as usize].adsr_params.a.value()), calc_param_pos(1.), canvas);
+          render_param("Decay", fmt_float(params.ops[x as usize].adsr_params.d.value()), calc_param_pos(2.), canvas);
+          render_param("Sustain", fmt_float(params.ops[x as usize].adsr_params.s.value()), calc_param_pos(3.), canvas);
+          render_param("Release", fmt_float(params.ops[x as usize].adsr_params.r.value()), calc_param_pos(4.), canvas);
         }
       }
     }

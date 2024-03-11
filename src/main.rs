@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
   let dests = create_modulation_list(&synth_params);
 
   let ui_state = UIState {
-    page: Arc::new(Mutex::new(Page::Op1)),
+    page: Arc::new(Mutex::new(Page::Op(0))),
     op_subpage: Arc::new(Mutex::new(OpPage::Tone)),
     lfo_dest: Arc::new(Mutex::new(dests[0].clone()))
   };
@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
     net.connect(id, 0, voice_mixer_id, i)
   }
   
-  let dummy_dest = net.push(sine_lfo(&synth_params.op2.volume));
+  let dummy_dest = net.push(sine_lfo(&synth_params.ops[1].volume));
 
   let mut connection = get_midi_out_connection(midi_out, &out_port);
   run_output(net.backend());

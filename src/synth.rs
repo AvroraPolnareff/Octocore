@@ -1,13 +1,13 @@
-use cpal::{Device, FromSample, SampleFormat, SizedSample, StreamConfig};
+use cpal::{BufferSize, Device, FromSample, SampleFormat, SampleRate, SizedSample, StreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
-use fundsp::hacker::{sine, var, Shared, NetBackend64, sine_hz, AudioNode, U1, U0};
+use fundsp::hacker::{sine, var, Shared, NetBackend64, sine_hz, AudioNode, U1, U0, pass, oversample, constant};
 
 use crate::adsr::adsr;
 use crate::param::{param, Param, param_sink};
 use crate::poly::VoiceIndex;
-use crate::synth_params::{AdsrParams, SynthParams};
+use crate::synth_params::{AdsrParams, OpParams, SynthParams, VoiceParams};
 
 
 pub fn c_adsr(
@@ -23,21 +23,30 @@ pub fn c_adsr(
 	) >> adsr()
 }
 
+pub fn op(
+	voice_params: &VoiceParams,
+	op_params: &OpParams
+) -> An <impl AudioNode<Inputs = U1, Outputs = U1, Sample = f64>> {
+	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend) * param(&op_params.ratio);
+	pass() * bf() + bf() >> sine() * c_adsr(
+		&op_params.adsr_params, &voice_params.control
+	) * param(&op_params.volume)
+}
+
 pub fn create_sound(
 	synth_params: &SynthParams,
 	voice_index: VoiceIndex
 ) -> Box<dyn AudioUnit64> {
 	let voice_params = &synth_params.voice_params[voice_index as usize];
-	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend);
-	let modulator = bf() * param(&synth_params.op2.ratio)
-		>> sine() * c_adsr(&synth_params.op2.adsr_params, &voice_params.control)
-		* param(&synth_params.op2.volume);
-	let bff = || bf() * param(&synth_params.op1.ratio);
-	let base_tone =
-		modulator * bff() + bff() >> sine() * param(&synth_params.op1.volume);
+	
 
 	Box::new(
-		base_tone * c_adsr(&synth_params.op1.adsr_params, &voice_params.control) * var(&voice_params.volume)
+		constant(1.)
+			>> oversample(op(&voice_params, &synth_params.ops[3]))
+			>> oversample(op(&voice_params, &synth_params.ops[2]))
+			>> oversample(op(&voice_params, &synth_params.ops[1]))
+			>> oversample(op(&voice_params, &synth_params.ops[0]))
+			* var(&voice_params.volume)
 	)
 }
 
@@ -88,8 +97,12 @@ pub fn run_output(
 	let device = host
 		.default_output_device()
 		.expect("failed to find a default output device");
-	let config = device.default_output_config().unwrap();
-	match config.sample_format() {
+	let supported_config = device.default_output_config().unwrap();
+	let config = StreamConfig {
+		channels: 2, sample_rate: SampleRate(48000), buffer_size: BufferSize::Fixed(256)
+	};
+
+	match supported_config.sample_format() {
 		SampleFormat::F32 => {
 			run_synth::<f32>(device, config.into(), backend)
 		}

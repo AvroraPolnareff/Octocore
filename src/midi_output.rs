@@ -26,9 +26,9 @@ fn send_cc(conn: &mut MidiOutputConnection, control: ControlChange) {
 	)).expect(&format!("Cannot send {control:?}"));
 }
 
-const FIRST_LEDS_ROW: [u8; 3] = [
-	102, 103, 104
-	// , 105, 106, 107, 108, 109
+const FIRST_LEDS_ROW: [u8; 5] = [
+	102, 103, 104, 105, 106
+	// , 107, 108, 109
 ];
 const SECOND_LEDS_ROW: [u8; 2] = [
 	20, 21
@@ -74,21 +74,22 @@ pub fn send_ui_midi(event: &InputEvent, conn: &mut MidiOutputConnection) {
 		}
 		InputEvent::PageChange(page) => {
 			match page {
-				Page::Op1 => {
+				Page::Op(0) => {
 					send_switch(Led {led_num: FIRST_LEDS_ROW[0], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
-				Page::Op2 => {
+				Page::Op(1) => {
 					send_switch(Led {led_num: FIRST_LEDS_ROW[1], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
-				Page::Modulation => {
+				Page::Op(2) => {
 					send_switch(Led {led_num: FIRST_LEDS_ROW[2], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
 				}
-				// Page::Op3 => {
-				// 	//send_switch(Led {led_num: FIRST_LEDS_ROW[2], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
-				// }
-				// Page::Op4 => {
-				// 	//send_switch(Led {led_num: FIRST_LEDS_ROW[3], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
-				// }
+				Page::Op(3) => {
+					send_switch(Led {led_num: FIRST_LEDS_ROW[3], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
+				}
+				Page::Modulation => {
+					send_switch(Led {led_num: FIRST_LEDS_ROW[4], led_color: 122, neutral_color: 124}, FIRST_LEDS_ROW, conn)
+				}
+				_ => {}
 			}
 		}
 		_ => {}

@@ -40,9 +40,11 @@ pub fn control_to_pages(
 		ControlChange::Undefined {control, value} => {
 			if value > 0 {
 				match control {
-					102 => { *page = Page::Op1; in_tx.send(InputEvent::PageChange(Page::Op1)).unwrap(); }
-					103 => { *page = Page::Op2; in_tx.send(InputEvent::PageChange(Page::Op2)).unwrap(); }
-					104 => { *page = Page::Modulation; in_tx.send(InputEvent::PageChange(Page::Modulation)).unwrap(); }
+					102 => { *page = Page::Op(0); in_tx.send(InputEvent::PageChange(Page::Op(0))).unwrap(); }
+					103 => { *page = Page::Op(1); in_tx.send(InputEvent::PageChange(Page::Op(1))).unwrap(); }
+					104 => { *page = Page::Op(2); in_tx.send(InputEvent::PageChange(Page::Op(2))).unwrap(); }
+					105 => { *page = Page::Op(3); in_tx.send(InputEvent::PageChange(Page::Op(3))).unwrap(); }
+					106 => { *page = Page::Modulation; in_tx.send(InputEvent::PageChange(Page::Modulation)).unwrap(); }
 					//105 => { *page = Page::Op4; ui_tx.send(InputEvent::PageChange(Page::Op4)).unwrap(); }
 					_ => {}
 				}
@@ -115,11 +117,8 @@ pub fn pots_to_controls<'a>(
 
 	if let Some(pot) = pot {
 		match *page {
-			Page::Op1 => {
-				pots_to_sub_page(&pot, op_subpage.to_owned(), &voice_params.op1)
-			}
-			Page::Op2 => {
-				pots_to_sub_page(&pot, op_subpage.to_owned(), &voice_params.op2)
+			Page::Op(x) => {
+				pots_to_sub_page(&pot, op_subpage.to_owned(), &voice_params.ops[x as usize])
 			}
 			Page::Modulation => {
 				if let Pot::MainPot(1, x) = pot {
@@ -128,7 +127,7 @@ pub fn pots_to_controls<'a>(
 					in_tx.send(InputEvent::LFO(dest.to_owned().1.clone())).unwrap();
 				}
 			}
-			//_ => {}
+			_ => {}
 		}
 	}
 }

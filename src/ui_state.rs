@@ -8,10 +8,7 @@ pub enum OpPage {
 }
 
 pub enum Page {
-	Op1,
-	Op2,
-	// Op3,
-	// Op4,
+	Op(u8),
 	Modulation
 }
 
