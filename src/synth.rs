@@ -2,9 +2,10 @@ use cpal::{BufferSize, Device, FromSample, SampleFormat, SampleRate, SizedSample
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use fundsp::audiounit::AudioUnit64;
 use fundsp::combinator::An;
-use fundsp::hacker::{sine, var, Shared, NetBackend64, sine_hz, AudioNode, U1, U0, pass, oversample, constant};
+use fundsp::hacker::{var, Shared, NetBackend64, sine_hz, AudioNode, U1, U0, pass, oversample, constant};
 
 use crate::adsr::adsr;
+use crate::p_sine::p_sine;
 use crate::param::{param, Param, param_sink};
 use crate::poly::VoiceIndex;
 use crate::synth_params::{AdsrParams, OpParams, SynthParams, VoiceParams};
@@ -28,7 +29,7 @@ pub fn op(
 	op_params: &OpParams
 ) -> An <impl AudioNode<Inputs = U1, Outputs = U1, Sample = f64>> {
 	let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend) * param(&op_params.ratio);
-	pass() * bf() + bf() >> sine() * c_adsr(
+	(bf() | pass()) >> p_sine() * c_adsr(
 		&op_params.adsr_params, &voice_params.control
 	) * param(&op_params.volume)
 }
@@ -42,10 +43,10 @@ pub fn create_sound(
 
 	Box::new(
 		constant(1.)
-			>> oversample(op(&voice_params, &synth_params.ops[3]))
-			>> oversample(op(&voice_params, &synth_params.ops[2]))
-			>> oversample(op(&voice_params, &synth_params.ops[1]))
-			>> oversample(op(&voice_params, &synth_params.ops[0]))
+			>> op(&voice_params, &synth_params.ops[3])
+			>> op(&voice_params, &synth_params.ops[2])
+			>> op(&voice_params, &synth_params.ops[1])
+			>> op(&voice_params, &synth_params.ops[0])
 			* var(&voice_params.volume)
 	)
 }

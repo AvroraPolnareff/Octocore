@@ -14,9 +14,9 @@ impl Default for AdsrParams {
   fn default() -> Self {
     Self {
       a: shared(0.01),
-      d: shared(0.2),
-      s: shared(0.5),
-      r: shared(0.2),
+      d: shared(0.0),
+      s: shared(1.0),
+      r: shared(0.0),
     }
   }
 }
@@ -32,7 +32,7 @@ impl Default for OpParams {
   fn default() -> Self {
     Self {
       ratio: Param::new(1.0, (1.0, 999.0), None),
-      volume: Param::new(0.5, (0.0, 999.0), None),
+      volume: Param::new(0.05, (0.0, 1.0), None),
       adsr_params: AdsrParams::default()
     }
   }

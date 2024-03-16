@@ -72,7 +72,7 @@ pub fn pots_to_sub_page(pot: &Pot, op_subpage: OpPage, op_params: &OpParams) {
 		OpPage::Tone => {
 			if let Pot::MainPot(id, value) = pot {
 				match id {
-					1 => { encoder_to_param(*value, &op_params.volume, 16.) }
+					1 => { encoder_to_param(*value, &op_params.volume, 512.) }
 					2 => { encoder_to_param(*value, &op_params.ratio, 1.) }
 					_ => {}
 				}

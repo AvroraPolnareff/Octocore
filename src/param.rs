@@ -106,12 +106,10 @@ impl ParamSink {
 		}
 	}
 
-	/// Set the value of this variable.
 	pub fn set_value(&self, value: f64) {
 		self.param.set_value(value)
 	}
 
-	/// Get the value of this variable.
 	pub fn value(&self) -> f64 { self.param.value() }
 }
 

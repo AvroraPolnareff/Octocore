@@ -9,6 +9,7 @@ mod midi_output;
 mod poly;
 mod param;
 mod modulation;
+mod p_sine;
 
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel};
@@ -16,6 +17,7 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 use fundsp::hacker32::{Net64};
 use fundsp::hacker::{NodeId, pass, sink, sum, U128};
+use fundsp::prelude::constant;
 use midir::{MidiInput, MidiOutput};
 use crate::display::render_image;
 use crate::midi_input::{get_midi_device, run_input};
@@ -69,7 +71,7 @@ fn main() -> anyhow::Result<()> {
     net.connect(id, 0, voice_mixer_id, i)
   }
   
-  let dummy_dest = net.push(sine_lfo(&synth_params.ops[1].volume));
+  let dummy_dest = net.push(Box::new(constant(0.5)));//sine_lfo(&synth_params.ops[1].volume));
 
   let mut connection = get_midi_out_connection(midi_out, &out_port);
   run_output(net.backend());
