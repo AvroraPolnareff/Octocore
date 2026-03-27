@@ -137,15 +137,39 @@ pub fn pots_to_controls<'a>(
     let op_subpage = ui.op_subpage.lock().unwrap();
     let mut dest = ui.lfo_dest.lock().unwrap();
 
-    let pot = match control {
-        ControlChange::SoundControl2(x) => Some(Pot::MainPot(1, x)),
-        ControlChange::SoundControl3(x) => Some(Pot::MainPot(2, x)),
-        ControlChange::SoundControl4(x) => Some(Pot::MainPot(3, x)),
-        ControlChange::SoundControl5(x) => Some(Pot::MainPot(4, x)),
-        ControlChange::SoundControl6(x) => Some(Pot::MainPot(5, x)),
-        ControlChange::SoundControl7(x) => Some(Pot::MainPot(6, x)),
-        ControlChange::SoundControl8(x) => Some(Pot::MainPot(7, x)),
-        ControlChange::SoundControl9(x) => Some(Pot::MainPot(8, x)),
+    let pot = match control.to_simple() {
+        ControlChange::CC {
+            control: 71,
+            value: x,
+        } => Some(Pot::MainPot(1, x)),
+        ControlChange::CC {
+            control: 72,
+            value: x,
+        } => Some(Pot::MainPot(2, x)),
+        ControlChange::CC {
+            control: 73,
+            value: x,
+        } => Some(Pot::MainPot(3, x)),
+        ControlChange::CC {
+            control: 74,
+            value: x,
+        } => Some(Pot::MainPot(4, x)),
+        ControlChange::CC {
+            control: 75,
+            value: x,
+        } => Some(Pot::MainPot(5, x)),
+        ControlChange::CC {
+            control: 76,
+            value: x,
+        } => Some(Pot::MainPot(6, x)),
+        ControlChange::CC {
+            control: 77,
+            value: x,
+        } => Some(Pot::MainPot(7, x)),
+        ControlChange::CC {
+            control: 78,
+            value: x,
+        } => Some(Pot::MainPot(8, x)),
         _ => None,
     };
 
@@ -224,17 +248,18 @@ pub fn run_input(
 ) -> anyhow::Result<()> {
     println!("\nOpening connection");
     let in_port_name = midi_in.port_name(&in_port)?;
-    let _conn_in = midi_in
-        .connect(
-            &in_port,
-            "midir-read-input",
-            move |_stamp, message, _| {
-                let (msg, _len) = MidiMsg::from_midi(message).unwrap();
-                midi_to_params(msg, &voice_params, &ui, &in_tx, &mod_destinations)
-            },
-            (),
-        )
-        .unwrap();
+    let _conn_in = midi_in.connect(
+        &in_port,
+        "midir-read-input",
+        move |_stamp, message, _| {
+            let (msg, _len) = MidiMsg::from_midi(message).unwrap();
+            midi_to_params(msg, &voice_params, &ui, &in_tx, &mod_destinations)
+        },
+        (),
+    );
+    if let Err(e) = _conn_in {
+        panic!("Cannot connect to the Midi Input {}", e.to_string())
+    }
     println!("Connection open, reading input from '{in_port_name}'");
 
     let _ = input::<String>().msg("(press enter to exit)...\n").get();

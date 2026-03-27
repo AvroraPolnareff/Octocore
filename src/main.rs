@@ -7,7 +7,6 @@ mod p_sine;
 mod param;
 mod poly;
 mod push;
-mod push2;
 mod synth;
 mod synth_params;
 mod ui_state;

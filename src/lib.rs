@@ -8,7 +8,6 @@ pub mod p_sine;
 pub mod param;
 pub mod poly;
 pub mod push;
-pub mod push2;
 pub mod synth;
 pub mod synth_params;
 pub mod ui_state;
