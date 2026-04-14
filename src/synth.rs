@@ -1,9 +1,9 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{BufferSize, Device, FromSample, SampleFormat, SampleRate, SizedSample, StreamConfig};
-use fundsp::audiounit::AudioUnit64;
+use fundsp::audiounit::AudioUnit;
 use fundsp::combinator::An;
-use fundsp::hacker::{
-    constant, oversample, pass, sine_hz, var, AudioNode, NetBackend64, Shared, U0, U1,
+use fundsp::prelude::{
+    constant, oversample, pass, sine_hz, var, AudioNode, NetBackend, Shared, U0, U1,
 };
 
 use crate::adsr::adsr;
@@ -14,8 +14,8 @@ use crate::synth_params::{AdsrParams, OpParams, SynthParams, VoiceParams};
 
 pub fn c_adsr(
     adsr_params: &AdsrParams,
-    control: &Shared<f64>,
-) -> An<impl AudioNode<Inputs = U0, Outputs = U1, Sample = f64>> {
+    control: &Shared,
+) -> An<impl AudioNode<Inputs = U0, Outputs = U1>> {
     (var(&adsr_params.a)
         | var(&adsr_params.d)
         | var(&adsr_params.s)
@@ -27,15 +27,15 @@ pub fn c_adsr(
 pub fn op(
     voice_params: &VoiceParams,
     op_params: &OpParams,
-) -> An<impl AudioNode<Inputs = U1, Outputs = U1, Sample = f64>> {
+) -> An<impl AudioNode<Inputs = U1, Outputs = U1>> {
     let bf = || var(&voice_params.pitch) * var(&voice_params.pitch_bend) * param(&op_params.ratio);
     (bf() | pass())
-        >> p_sine()
+        >> p_sine::<f32>()
             * c_adsr(&op_params.adsr_params, &voice_params.control)
             * param(&op_params.volume)
 }
 
-pub fn create_sound(synth_params: &SynthParams, voice_index: VoiceIndex) -> Box<dyn AudioUnit64> {
+pub fn create_sound(synth_params: &SynthParams, voice_index: VoiceIndex) -> Box<dyn AudioUnit> {
     let voice_params = &synth_params.voice_params[voice_index as usize];
 
     Box::new(
@@ -47,18 +47,18 @@ pub fn create_sound(synth_params: &SynthParams, voice_index: VoiceIndex) -> Box<
     )
 }
 
-pub fn sine_lfo(param: &Param) -> Box<dyn AudioUnit64> {
-    Box::new(sine_hz(0.5) * 10.0 >> param_sink(param))
+pub fn sine_lfo(param: &Param) -> Box<dyn AudioUnit> {
+    Box::new(sine_hz::<f32>(0.5) * 10.0 >> param_sink(param))
 }
 
-pub fn pitch_bend_factor(bend: u16) -> f64 {
-    2.0_f64.powf(((bend as f64 - 8192.0) / 8192.0) / 12.0)
+pub fn pitch_bend_factor(bend: u16) -> f32 {
+    2.0_f32.powf(((bend as f32 - 8192.0) / 8192.0) / 12.0)
 }
 
-fn run_synth<T: SizedSample + FromSample<f64>>(
+fn run_synth<T: SizedSample + FromSample<f32>>(
     device: Device,
     config: StreamConfig,
-    backend: NetBackend64,
+    backend: NetBackend,
 ) {
     std::thread::spawn(move || {
         let mut backend = backend;
@@ -85,7 +85,7 @@ fn run_synth<T: SizedSample + FromSample<f64>>(
     });
 }
 
-pub fn run_output(backend: NetBackend64) {
+pub fn run_output(backend: NetBackend) {
     let host = cpal::default_host();
     let device = host
         .default_output_device()
@@ -105,10 +105,10 @@ pub fn run_output(backend: NetBackend64) {
     }
 }
 
-pub fn write_data<T: SizedSample + FromSample<f64>>(
+pub fn write_data<T: SizedSample + FromSample<f32>>(
     output: &mut [T],
     channels: usize,
-    next_sample: &mut dyn FnMut() -> (f64, f64),
+    next_sample: &mut dyn FnMut() -> (f32, f32),
 ) {
     for frame in output.chunks_mut(channels) {
         let sample = next_sample();

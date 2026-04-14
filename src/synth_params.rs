@@ -1,14 +1,15 @@
 use crate::param::Param;
 use crate::poly::VoiceIndex;
-use fundsp::hacker::{shared, Shared};
+use fundsp::prelude::shared;
+use fundsp::shared::Shared;
 use std::iter::repeat_with;
 
 #[derive(Clone)]
 pub struct AdsrParams {
-    pub a: Shared<f64>,
-    pub d: Shared<f64>,
-    pub s: Shared<f64>,
-    pub r: Shared<f64>,
+    pub a: Shared,
+    pub d: Shared,
+    pub s: Shared,
+    pub r: Shared,
 }
 impl Default for AdsrParams {
     fn default() -> Self {
@@ -40,10 +41,10 @@ impl Default for OpParams {
 
 #[derive(Clone)]
 pub struct VoiceParams {
-    pub pitch: Shared<f64>,
-    pub volume: Shared<f64>,
-    pub pitch_bend: Shared<f64>,
-    pub control: Shared<f64>,
+    pub pitch: Shared,
+    pub volume: Shared,
+    pub pitch_bend: Shared,
+    pub control: Shared,
 }
 
 impl Default for VoiceParams {

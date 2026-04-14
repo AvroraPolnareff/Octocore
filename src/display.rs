@@ -1,7 +1,8 @@
 use once_cell::sync::OnceCell;
 
 use crate::synth_params::SynthParams;
-use crate::ui_state::{OpPage, Page, UIState};
+use crate::ui::ui_state::{OpPage, Page, UIState};
+
 use skia_safe::{
     surfaces, AlphaType, Canvas, Color, ColorSpace, ColorType, Font, FontMgr, FontStyle, ImageInfo,
     Paint, Point, Typeface,
@@ -10,8 +11,8 @@ use skia_safe::{
 pub fn default_typeface() -> Typeface {
     DEFAULT_TYPEFACE
         .get_or_init(|| {
-            let font_mgr = FontMgr::new();
-            font_mgr
+            let fontMgr = FontMgr::new();
+            fontMgr
                 .legacy_make_typeface(None, FontStyle::default())
                 .unwrap()
         })
@@ -41,7 +42,7 @@ pub fn render_param(name: &str, value: String, point: impl Into<Point>, canvas: 
     );
 }
 
-fn fmt_float(f: f64) -> String {
+fn fmt_float(f: f32) -> String {
     format!("{:.2}", f)
 }
 

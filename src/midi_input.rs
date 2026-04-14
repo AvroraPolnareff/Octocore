@@ -1,9 +1,8 @@
 use crate::modulation::{ModDestination, ModDestinations};
 use crate::param::Param;
 use crate::synth_params::{OpParams, SynthParams};
-use crate::ui_state::{InputEvent, OpPage, Page, UIState};
+use crate::ui::ui_state::{InputEvent, OpPage, Page, UIState};
 use anyhow::bail;
-use fundsp::hacker::Atomic;
 use fundsp::shared::Shared;
 use fundsp::Float;
 use midi_msg::{ChannelVoiceMsg, ControlChange, MidiMsg};
@@ -12,23 +11,19 @@ use read_input::prelude::input;
 use read_input::prelude::*;
 use std::sync::mpsc::Sender;
 
-pub fn encoder_to_value(input: u8, value: f64, intensity: f64) -> f64 {
-    if input > 64 {
-        value + (-128 + input as i8) as f64 / intensity
+pub fn encoder_to_value(input: u8, value: f32, intensity: f32) -> f32 {
+    if input > 32 {
+        value + (-128 + input as i8) as f32 / intensity
     } else {
-        value + input as f64 / intensity
+        value + input as f32 / intensity
     }
 }
 
-pub fn encoder_to_shared<F: Float + Atomic>(input: u8, value: &Shared<F>, intensity: F) {
-    value.set_value(F::from_f64(encoder_to_value(
-        input,
-        value.value().to_f64(),
-        intensity.to_f64(),
-    )))
+pub fn encoder_to_shared(input: u8, value: &Shared, intensity: f32) {
+    value.set_value(encoder_to_value(input, value.value().to_f32(), intensity))
 }
 
-pub fn encoder_to_param(input: u8, value: &Param, intensity: f64) {
+pub fn encoder_to_param(input: u8, value: &Param, intensity: f32) {
     value.set_value(encoder_to_value(
         input,
         value.unmodulated_value(),
@@ -180,7 +175,7 @@ pub fn pots_to_controls<'a>(
             }
             Page::Modulation => {
                 if let Pot::MainPot(1, x) = pot {
-                    let index = encoder_to_value(x, dest.to_owned().0 as f64, 1.).floor() as usize
+                    let index = encoder_to_value(x, dest.to_owned().0 as f32, 1.).floor() as usize
                         % mod_dests.len();
                     *dest = mod_dests[index].clone();
                     in_tx

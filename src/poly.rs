@@ -1,5 +1,5 @@
 use crate::synth_params::VoiceParams;
-use fundsp::hacker32::midi_hz;
+use fundsp::prelude::midi_hz;
 
 pub type VoiceIndex = u8;
 
@@ -43,8 +43,8 @@ impl MonoPoly {
             voice_index: self.last_voice_index,
         };
 
-        voice_params.pitch.set_value(midi_hz(note as f64));
-        voice_params.volume.set_value(velocity as f64 / 127.0);
+        voice_params.pitch.set_value(midi_hz(note as f32));
+        voice_params.volume.set_value(velocity as f32 / 127.0);
         voice_params.pitch_bend.set_value(1.0);
         voice_params.control.set_value(1.0);
 

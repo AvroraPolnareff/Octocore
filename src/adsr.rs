@@ -1,11 +1,10 @@
-use fundsp::hacker::{clamp01, lerp};
-use fundsp::prelude::{lfo_in, shared, var, An, Atomic, EnvelopeIn, Frame, U5};
+use fundsp::prelude::{clamp01, lerp, lfo_in, shared, var, An, Atomic, EnvelopeIn, Frame, U5};
 use fundsp::Float;
 
-pub fn adsr<F: Float + Atomic>(
-) -> An<EnvelopeIn<F, F, impl Fn(F, &Frame<F, U5>) -> F + Sized + Clone, U5, F>> {
-    let neg1 = F::from_f64(-1.0);
-    let zero = F::from_f64(0.0);
+pub fn adsr(
+) -> An<EnvelopeIn<f32, impl FnMut(f32, &Frame<f32, U5>) -> f32 + Sized + Clone, U5, f32>> {
+    let neg1 = -1.0;
+    let zero = 0.0;
     let a = shared(neg1);
     let b = shared(neg1);
     let attack_start = var(&a);
@@ -32,11 +31,11 @@ pub fn adsr<F: Float + Atomic>(
 }
 
 fn ads<F: Float>(attack: F, decay: F, sustain: F, time: F) -> F {
-    if time < attack {
+    if time.to_f32() < attack.to_f32() {
         lerp(F::from_f64(0.0), F::from_f64(1.0), time / attack)
     } else {
         let decay_time = time - attack;
-        if decay_time < decay {
+        if decay_time.to_f32() < decay.to_f32() {
             lerp(F::from_f64(1.0), sustain, decay_time / decay)
         } else {
             sustain
@@ -45,7 +44,7 @@ fn ads<F: Float>(attack: F, decay: F, sustain: F, time: F) -> F {
 }
 
 fn releasing<F: Float>(sustain: F, release: F, release_time: F) -> F {
-    if release_time > release {
+    if release_time.to_f32() > release.to_f32() {
         F::from_f64(0.0)
     } else {
         lerp(sustain, F::from_f64(0.0), release_time / release)

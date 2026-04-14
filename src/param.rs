@@ -1,18 +1,19 @@
-use fundsp::audionode::{AudioNode, Frame};
+use fundsp::audionode::AudioNode;
 use fundsp::math::clamp;
-use fundsp::prelude::{shared, An, Shared};
+use fundsp::prelude::{shared, An, BufferMut, BufferRef, Shared};
+use fundsp::Frame;
 use typenum::{U0, U1};
 
 #[derive(Clone)]
 pub struct Param {
-    value: Shared<f64>,
-    clamp: (f64, f64),
-    process: Option<(fn(value: f64) -> f64)>,
-    modulation: Shared<f64>,
+    value: Shared,
+    clamp: (f32, f32),
+    process: Option<(fn(value: f32) -> f32)>,
+    modulation: Shared,
 }
 
 impl Param {
-    pub fn new(value: f64, clamp: (f64, f64), process: Option<(fn(value: f64) -> f64)>) -> Self {
+    pub fn new(value: f32, clamp: (f32, f32), process: Option<(fn(value: f32) -> f32)>) -> Self {
         Self {
             value: shared(value),
             clamp,
@@ -21,20 +22,20 @@ impl Param {
         }
     }
 
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: f32) {
         self.value
             .set_value(clamp(self.clamp.0, self.clamp.1, value))
     }
 
-    pub fn unmodulated_value(&self) -> f64 {
+    pub fn unmodulated_value(&self) -> f32 {
         self.value.value()
     }
 
-    pub fn set_modulation(&self, value: f64) {
+    pub fn set_modulation(&self, value: f32) {
         self.modulation.set_value(value)
     }
 
-    pub fn value(&self) -> f64 {
+    pub fn value(&self) -> f32 {
         clamp(
             self.clamp.0,
             self.clamp.1,
@@ -57,12 +58,12 @@ impl ParamVar {
     }
 
     /// Set the value of this variable.
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: f32) {
         self.param.set_value(value)
     }
 
     /// Get the value of this variable.
-    pub fn value(&self) -> f64 {
+    pub fn value(&self) -> f32 {
         self.param.value()
     }
 }
@@ -70,28 +71,18 @@ impl ParamVar {
 impl AudioNode for ParamVar {
     const ID: u64 = 1337;
 
-    type Sample = f64;
     type Inputs = U0;
     type Outputs = U1;
-    type Setting = ();
 
     #[inline]
-    fn tick(
-        &mut self,
-        _: &Frame<Self::Sample, Self::Inputs>,
-    ) -> Frame<Self::Sample, Self::Outputs> {
-        let sample: f64 = self.value();
+    fn tick(&mut self, _: &Frame<f32, Self::Inputs>) -> Frame<f32, Self::Outputs> {
+        let sample: f32 = self.value();
         [sample].into()
     }
 
-    fn process(
-        &mut self,
-        size: usize,
-        _input: &[&[Self::Sample]],
-        output: &mut [&mut [Self::Sample]],
-    ) {
+    fn process(&mut self, size: usize, _input: &BufferRef, output: &mut BufferMut) {
         let sample = self.value();
-        output[0][..size].fill(sample);
+        output.set(0, size, sample.into());
     }
 }
 
@@ -111,11 +102,11 @@ impl ParamSink {
         }
     }
 
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: f32) {
         self.param.set_value(value)
     }
 
-    pub fn value(&self) -> f64 {
+    pub fn value(&self) -> f32 {
         self.param.value()
     }
 }
@@ -123,27 +114,18 @@ impl ParamSink {
 impl AudioNode for ParamSink {
     const ID: u64 = 1338;
 
-    type Sample = f64;
     type Inputs = U1;
     type Outputs = U0;
-    type Setting = ();
 
     #[inline]
-    fn tick(
-        &mut self,
-        input: &Frame<Self::Sample, Self::Inputs>,
-    ) -> Frame<Self::Sample, Self::Outputs> {
+    fn tick(&mut self, input: &Frame<f32, Self::Inputs>) -> Frame<f32, Self::Outputs> {
         self.param.set_modulation(input[0]);
         Frame::default()
     }
 
-    fn process(
-        &mut self,
-        _size: usize,
-        input: &[&[Self::Sample]],
-        _output: &mut [&mut [Self::Sample]],
-    ) {
-        self.param.set_modulation(input[0][0]);
+    fn process(&mut self, _size: usize, input: &BufferRef, _output: &mut BufferMut) {
+        //self.param.set_modulation(input.at(0, 0));
+        ()
     }
 }
 

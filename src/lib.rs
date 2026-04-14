@@ -10,4 +10,4 @@ pub mod poly;
 pub mod push;
 pub mod synth;
 pub mod synth_params;
-pub mod ui_state;
+pub mod ui;

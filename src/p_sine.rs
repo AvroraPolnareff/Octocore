@@ -1,7 +1,9 @@
-use fundsp::math::{cos, rnd, sin, TAU};
+use fundsp::math::{cos, rnd1, sin};
 use fundsp::prelude::{An, AudioNode, Frame, SignalFrame};
-use fundsp::signal::{new_signal_frame, Signal};
-use fundsp::{convert, Real};
+use fundsp::prelude::{BufferMut, BufferRef};
+use fundsp::signal::{Routing, Signal};
+use fundsp::{convert, F32x, Real};
+use fundsp::{full_simd_items, Float, SIMD_N, SIMD_S};
 
 pub fn p_sine<T: Real>() -> An<PSine<T>> {
     An(PSine::new(fundsp::DEFAULT_SR))
@@ -42,15 +44,13 @@ impl<T: Real> PSine<T> {
 
 impl<T: Real> AudioNode for PSine<T> {
     const ID: u64 = 1339;
-    type Sample = T;
     type Inputs = typenum::U2;
     type Outputs = typenum::U1;
-    type Setting = ();
 
     fn reset(&mut self) {
         self.phase = match self.initial_phase {
             Some(phase) => phase,
-            None => T::from_f64(rnd(self.hash as i64)),
+            None => T::from_f64(rnd1(self.hash as u64)),
         };
     }
 
@@ -59,27 +59,21 @@ impl<T: Real> AudioNode for PSine<T> {
     }
 
     #[inline]
-    fn tick(
-        &mut self,
-        input: &Frame<Self::Sample, Self::Inputs>,
-    ) -> Frame<Self::Sample, Self::Outputs> {
-        self.phase += input[0] * self.sample_duration;
-        while self.phase > T::one() {
-            self.phase -= T::one();
-        }
-        // This is supposedly faster than self.phase -= self.phase.floor();
-        [sin((self.phase + input[1]) * T::from_f64(TAU))].into()
+    fn tick(&mut self, input: &Frame<f32, Self::Inputs>) -> Frame<f32, Self::Outputs> {
+        self.phase += T::from_f32(input[0]) * self.sample_duration;
+        self.phase -= self.phase.floor();
+        [sin((self.phase.to_f32() + input[1]) * f32::TAU)].into()
     }
 
-    fn process(
-        &mut self,
-        size: usize,
-        input: &[&[Self::Sample]],
-        output: &mut [&mut [Self::Sample]],
-    ) {
-        for i in 0..size {
-            self.phase += input[0][i] * self.sample_duration;
-            output[0][i] = sin((self.phase + input[1][i]) * T::from_f64(TAU));
+    fn process(&mut self, size: usize, input: &BufferRef, output: &mut BufferMut) {
+        for i in 0..full_simd_items(size) {
+            let element: [f32; SIMD_N] = core::array::from_fn(|j| {
+                let tmp = self.phase.to_f32();
+                self.phase +=
+                    T::from_f32(input.at_f32(0, (i << SIMD_S) + j)) * self.sample_duration;
+                tmp
+            });
+            output.set(0, i, (F32x::new(element) * f32::TAU).sin());
         }
         self.phase -= self.phase.floor();
     }
@@ -89,9 +83,7 @@ impl<T: Real> AudioNode for PSine<T> {
         self.reset();
     }
 
-    fn route(&mut self, _input: &SignalFrame, _frequency: f64) -> SignalFrame {
-        let mut output = new_signal_frame(self.outputs());
-        output[0] = Signal::Latency(0.0);
-        output
+    fn route(&mut self, input: &SignalFrame, _frequency: f64) -> SignalFrame {
+        Routing::Arbitrary(0.0).route(input, self.outputs())
     }
 }

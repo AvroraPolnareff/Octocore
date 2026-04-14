@@ -9,7 +9,7 @@ mod poly;
 mod push;
 mod synth;
 mod synth_params;
-mod ui_state;
+mod ui;
 
 use crate::display::render_image;
 use crate::midi_input::{get_midi_device, run_input};
@@ -21,10 +21,8 @@ use crate::poly::MonoPoly;
 use crate::push::Push2;
 use crate::synth::{create_sound, run_output, sine_lfo};
 use crate::synth_params::SynthParams;
-use crate::ui_state::{InputEvent, OpPage, Page, UIState};
-use fundsp::hacker::{pass, sink, sum, NodeId, U128};
-use fundsp::hacker32::Net64;
-use fundsp::prelude::constant;
+use crate::ui::ui_state::{InputEvent, OpPage, Page, UIState};
+use fundsp::prelude::{constant, pass, sink, sum, sumf, Net, NodeId, U128};
 use midir::{MidiInput, MidiOutput};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
@@ -62,8 +60,8 @@ fn main() -> anyhow::Result<()> {
 
     let (ui_tx, ui_rx) = channel::<InputEvent>();
 
-    let mut net = Net64::new(0, 1);
-    let voice_mixer_id = net.push(Box::new(sum::<U128, _, _>(|_| pass())));
+    let mut net = Net::new(0, 1);
+    let voice_mixer_id = net.push(Box::new(sumf::<U128, _, _, f32>(|_| pass())));
     net.connect_output(voice_mixer_id, 0, 0);
 
     let voice_ids: Vec<(usize, NodeId)> = (0..mono_poly.voice_size)

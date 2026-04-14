@@ -1,4 +1,4 @@
-use crate::ui_state::{InputEvent, OpPage, Page};
+use crate::ui::ui_state::{InputEvent, OpPage, Page};
 use anyhow::bail;
 use midi_msg::MidiMsg;
 use midi_msg::{Channel, ChannelVoiceMsg, ControlChange};
