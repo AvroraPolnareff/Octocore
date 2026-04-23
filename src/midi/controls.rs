@@ -3,6 +3,8 @@ use num_traits::FromPrimitive;
 use strum_macros::EnumIter;
 use typenum::{IsLessOrEqual, U4, U8};
 
+use crate::ui::button::Button;
+
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter, FromPrimitive)]
 pub enum TrackIndex {
     T1 = 0,
@@ -17,14 +19,14 @@ pub enum TrackIndex {
 
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter, FromPrimitive)]
 pub enum Duration {
-    D1_32t = 0,
-    D1_32,
-    D1_16t,
-    D1_16,
-    D1_8t,
-    D1_8,
+    D1_4 = 0,
     D1_4t,
-    D1_4,
+    D1_8,
+    D1_8t,
+    D1_16,
+    D1_16t,
+    D1_32,
+    D1_32t,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -78,6 +80,7 @@ pub enum PushButton {
 impl PushButton {
     pub fn to_midi(&self) -> [u8; 2] {
         match self {
+            // TODO: make return u8 instead
             Self::UpperRow(btn) => [0xB0, btn.clone() as u8 + 102],
             Self::LowerRow(btn) => [0xB0, btn.clone() as u8 + 20],
             Self::RepeatTime(btn) => [0xB0, btn.clone() as u8 + 36],
@@ -204,6 +207,83 @@ impl PushPad {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct ButtonMessage {
+    pub button: PushButton,
+    pub pressed: bool,
+}
+
+impl ButtonMessage {
+    pub fn from_midi(message: &[u8]) -> Option<Self> {
+        if let [control_kind, control_number, state] = message {
+            match control_kind {
+                0xB0 => match PushButton::from_midi(*control_number) {
+                    Some(btn) => Some(Self {
+                        button: btn,
+                        pressed: *state > 0,
+                    }),
+                    None => None,
+                },
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct PadMessage {
+    pub pad: PushPad,
+    pub velocity: u8,
+    pub pressed: bool,
+}
+
+impl PadMessage {
+    pub fn from_midi(message: &[u8]) -> Option<Self> {
+        if let [control_kind, control_number, state] = message {
+            match control_kind {
+                0x90 => match PushPad::from_midi(*control_number) {
+                    Some(pad) => Some(Self {
+                        pad: pad,
+                        pressed: true,
+                        velocity: *state,
+                    }),
+                    None => None,
+                },
+                0x80 => match PushPad::from_midi(*control_number) {
+                    Some(pad) => Some(Self {
+                        pad: pad,
+                        pressed: false,
+                        velocity: *state,
+                    }),
+                    None => None,
+                },
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum PushMessage {
+    PadPress(PadMessage),
+    ButtonPress(ButtonMessage),
+}
+
+impl PushMessage {
+    pub fn from_midi(message: &[u8]) -> Option<Self> {
+        if let Some(pad) = PadMessage::from_midi(message) {
+            Some(Self::PadPress(pad))
+        } else if let Some(btn) = ButtonMessage::from_midi(message) {
+            Some(Self::ButtonPress(btn))
+        } else {
+            None
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

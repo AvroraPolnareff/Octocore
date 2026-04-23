@@ -6,7 +6,7 @@ use midir::{MidiInput, MidiOutput};
 use octocore::midi::{
     self,
     colors::{self, Color, ColorMessage, ColoredControl, LedAnimation},
-    controls::{self, PushButton, PushPad},
+    controls::{self, PushButton, PushMessage, PushPad},
     io, sysex,
 };
 
@@ -51,6 +51,7 @@ fn main() -> anyhow::Result<()> {
     std::thread::spawn(move || loop {
         let msg = receiver.recv().unwrap();
         if !msg.starts_with(&[254]) {
+            println!("{:?}", PushMessage::from_midi(&msg[..]));
             println!("{:?}", msg)
         }
     });
