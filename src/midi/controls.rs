@@ -131,13 +131,13 @@ impl PushButton {
     pub fn from_midi(control_number: u8) -> Option<Self> {
         match control_number {
             (102..=109) => Some(Self::UpperRow(
-                TrackIndex::from_u8(control_number.clone() - 102).unwrap(),
+                TrackIndex::from_u8(control_number - 102).unwrap(),
             )),
             (20..=27) => Some(Self::LowerRow(
-                TrackIndex::from_u8(control_number.clone() - 20).unwrap(),
+                TrackIndex::from_u8(control_number - 20).unwrap(),
             )),
             (36..=43) => Some(Self::RepeatTime(
-                Duration::from_u8(control_number.clone() - 36).unwrap(),
+                Duration::from_u8(control_number - 36).unwrap(),
             )),
             3 => Some(Self::TapTempo),
             9 => Some(Self::Metronome),
@@ -208,6 +208,35 @@ impl PushPad {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+pub enum PushEncoder {
+    Row(TrackIndex),
+    Tempo,
+    Swing,
+    MasterVolume,
+}
+
+impl PushEncoder {
+    pub fn from_midi_cc(control_number: u8) -> Option<Self> {
+        match control_number {
+            (71..=78) => Some(Self::Row(TrackIndex::from_u8(control_number - 71).unwrap())),
+            14 => Some(Self::Tempo),
+            15 => Some(Self::Swing),
+            79 => Some(Self::MasterVolume),
+            _ => None,
+        }
+    }
+    pub fn from_midi_nn(control_number: u8) -> Option<Self> {
+        match control_number {
+            (0..=7) => Some(Self::Row(TrackIndex::from_u8(control_number).unwrap())),
+            10 => Some(Self::Tempo),
+            9 => Some(Self::Swing),
+            8 => Some(Self::MasterVolume),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ButtonMessage {
     pub button: PushButton,
     pub pressed: bool,
@@ -243,7 +272,7 @@ impl PadMessage {
     pub fn from_midi(message: &[u8]) -> Option<Self> {
         if let [control_kind, control_number, state] = message {
             match control_kind {
-                0x90 => match PushPad::from_midi(*control_number) {
+                (0x90..=0x9F) => match PushPad::from_midi(*control_number) {
                     Some(pad) => Some(Self {
                         pad: pad,
                         pressed: true,
@@ -268,17 +297,94 @@ impl PadMessage {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+pub struct EncoderTouchMessage {
+    pub encoder: PushEncoder,
+    pub touched: bool,
+}
+
+impl EncoderTouchMessage {
+    pub fn from_midi(message: &[u8]) -> Option<Self> {
+        if let [control_kind, control_number, _] = message {
+            match control_kind {
+                (0x90..=0x9F) => match PushEncoder::from_midi_nn(*control_number) {
+                    Some(encoder) => Some(Self {
+                        encoder: encoder,
+                        touched: true,
+                    }),
+                    None => None,
+                },
+                0x80 => match PushEncoder::from_midi_nn(*control_number) {
+                    Some(encoder) => Some(Self {
+                        encoder: encoder,
+                        touched: false,
+                    }),
+                    None => None,
+                },
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum TurnDirection {
+    CCW,
+    CW,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct EncoderTurnMessage {
+    pub encoder: PushEncoder,
+    pub velocity: u8,
+    pub direction: TurnDirection,
+}
+
+impl EncoderTurnMessage {
+    pub fn from_midi(message: &[u8]) -> Option<Self> {
+        if let [control_kind, control_number, state] = message {
+            match control_kind {
+                (0xB0..=0xBF) => match PushEncoder::from_midi_cc(*control_number) {
+                    Some(encoder) => Some(Self {
+                        encoder: encoder,
+                        direction: match state {
+                            x if *x > 63 => TurnDirection::CCW,
+                            _ => TurnDirection::CW,
+                        },
+                        velocity: match state {
+                            x if *x > 63 => 128 - x,
+                            x => *x,
+                        },
+                    }),
+                    None => None,
+                },
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum PushMessage {
     PadPress(PadMessage),
     ButtonPress(ButtonMessage),
+    EncoderTouch(EncoderTouchMessage),
+    EncoderTurn(EncoderTurnMessage),
 }
 
 impl PushMessage {
     pub fn from_midi(message: &[u8]) -> Option<Self> {
-        if let Some(pad) = PadMessage::from_midi(message) {
-            Some(Self::PadPress(pad))
-        } else if let Some(btn) = ButtonMessage::from_midi(message) {
-            Some(Self::ButtonPress(btn))
+        if let Some(msg) = PadMessage::from_midi(message) {
+            Some(Self::PadPress(msg))
+        } else if let Some(msg) = ButtonMessage::from_midi(message) {
+            Some(Self::ButtonPress(msg))
+        } else if let Some(msg) = EncoderTouchMessage::from_midi(message) {
+            Some(Self::EncoderTouch(msg))
+        } else if let Some(msg) = EncoderTurnMessage::from_midi(message) {
+            Some(Self::EncoderTurn(msg))
         } else {
             None
         }
