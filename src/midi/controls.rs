@@ -80,7 +80,7 @@ pub enum PushButton {
 impl PushButton {
     pub fn to_midi(&self) -> [u8; 2] {
         match self {
-            // TODO: make return u8 instead
+            // TODO: return u8 instead
             Self::UpperRow(btn) => [0xB0, btn.clone() as u8 + 102],
             Self::LowerRow(btn) => [0xB0, btn.clone() as u8 + 20],
             Self::RepeatTime(btn) => [0xB0, btn.clone() as u8 + 36],
@@ -377,16 +377,16 @@ pub enum PushMessage {
 
 impl PushMessage {
     pub fn from_midi(message: &[u8]) -> Option<Self> {
-        if let Some(msg) = PadMessage::from_midi(message) {
-            Some(Self::PadPress(msg))
-        } else if let Some(msg) = ButtonMessage::from_midi(message) {
-            Some(Self::ButtonPress(msg))
-        } else if let Some(msg) = EncoderTouchMessage::from_midi(message) {
-            Some(Self::EncoderTouch(msg))
-        } else if let Some(msg) = EncoderTurnMessage::from_midi(message) {
-            Some(Self::EncoderTurn(msg))
-        } else {
-            None
+        match message {
+            _ if let Some(msg) = PadMessage::from_midi(message) => Some(Self::PadPress(msg)),
+            _ if let Some(msg) = ButtonMessage::from_midi(message) => Some(Self::ButtonPress(msg)),
+            _ if let Some(msg) = EncoderTouchMessage::from_midi(message) => {
+                Some(Self::EncoderTouch(msg))
+            }
+            _ if let Some(msg) = EncoderTurnMessage::from_midi(message) => {
+                Some(Self::EncoderTurn(msg))
+            }
+            _ => None,
         }
     }
 }

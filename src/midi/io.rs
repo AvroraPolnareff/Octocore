@@ -41,7 +41,7 @@ pub fn run_input(
     let in_port_name = midi_in.port_name(&in_port)?;
     let _conn_in = midi_in.connect(
         &in_port,
-        "midir-read-input",
+        "octocore-in",
         move |_stamp, message, _| {
             let _ = in_tx.send(Vec::from(message));
         },
@@ -66,6 +66,6 @@ pub fn get_midi_out_connection(
         .expect("Cannot get output name");
     println!("Connection open, output from '{out_port_name}'");
     midi_out
-        .connect(out_port, "midir-write-output")
+        .connect(out_port, "octocore-out")
         .expect(&format!("Error while openening connection {out_port_name}"))
 }

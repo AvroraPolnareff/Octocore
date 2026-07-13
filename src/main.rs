@@ -1,5 +1,6 @@
 mod adsr;
 mod display;
+mod midi;
 mod midi_input;
 mod midi_output;
 mod modulation;
@@ -12,22 +13,19 @@ mod synth_params;
 mod ui;
 
 use crate::display::render_image;
+use crate::midi::io::{get_midi_out_connection, get_midi_out_device};
 use crate::midi_input::{get_midi_device, run_input};
-use crate::midi_output::{
-    get_midi_out_connection, get_midi_out_device, init_midi_ui, send_ui_midi,
-};
+use crate::midi_output::{init_midi_ui, send_ui_midi};
 use crate::modulation::create_modulation_list;
 use crate::poly::MonoPoly;
 use crate::push::Push2;
 use crate::synth::{create_sound, run_output, sine_lfo};
 use crate::synth_params::SynthParams;
 use crate::ui::ui_state::{InputEvent, OpPage, Page, UIState};
-use fundsp::prelude::{constant, pass, sink, sum, sumf, Net, NodeId, U128};
+use fundsp::prelude::{constant, pass, sumf, Net, NodeId, U128};
 use midir::{MidiInput, MidiOutput};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
-use std::thread::sleep;
-use std::time::{Duration, Instant};
 
 fn render_loop(synth_params: SynthParams, uistate: UIState) {
     std::thread::spawn(move || {

@@ -1,6 +1,7 @@
 // Octocore synthesizer library
 pub mod adsr;
 pub mod display;
+pub mod midi;
 pub mod midi_input;
 pub mod midi_output;
 pub mod modulation;

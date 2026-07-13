@@ -4,20 +4,6 @@ use midi_msg::MidiMsg;
 use midi_msg::{Channel, ChannelVoiceMsg, ControlChange};
 use midir::{MidiOutput, MidiOutputConnection, MidiOutputPort};
 
-pub fn get_midi_out_device(midi_out: &mut MidiOutput) -> anyhow::Result<MidiOutputPort> {
-    let out_ports = midi_out.ports();
-    if out_ports.is_empty() {
-        bail!("No MIDI devices attached")
-    } else {
-        let (port, _) = out_ports
-            .iter()
-            .map(|port| (port, midi_out.port_name(port).unwrap()))
-            .find(|(_, name)| name.contains("Ableton Push 2"))
-            .expect("Can't find Ableton Push 2 device");
-        Ok(port.clone())
-    }
-}
-
 fn send_cc(conn: &mut MidiOutputConnection, control: ControlChange) {
     conn.send(&MidiMsg::to_midi(&MidiMsg::ChannelVoice {
         channel: Channel::Ch1,
@@ -142,17 +128,4 @@ pub fn send_ui_midi(event: &InputEvent, conn: &mut MidiOutputConnection) {
         },
         _ => {}
     }
-}
-
-pub fn get_midi_out_connection(
-    midi_out: MidiOutput,
-    out_port: &MidiOutputPort,
-) -> MidiOutputConnection {
-    let out_port_name = midi_out
-        .port_name(out_port)
-        .expect("Cannot get output name");
-    println!("Connection open, reading input from '{out_port_name}'");
-    midi_out
-        .connect(out_port, "midir-write-output")
-        .expect(&format!("Error while openening connection {out_port_name}"))
 }

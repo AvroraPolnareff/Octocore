@@ -4,16 +4,14 @@ use std::{sync::mpsc::channel, time::Duration};
 
 use midir::{MidiInput, MidiOutput};
 use octocore::midi::{
-    self,
     colors::{self, Color, ColorMessage, ColoredControl, LedAnimation},
     controls::{self, PushButton, PushMessage, PushPad},
     io, sysex,
 };
 
 fn main() -> anyhow::Result<()> {
-    println!("OOOOOo");
-    let mut midi_in = MidiInput::new("midir reading input")?;
-    let mut midi_out = MidiOutput::new("midir writing output")?;
+    let mut midi_in = MidiInput::new("octocore-in")?;
+    let mut midi_out = MidiOutput::new("octocore-out")?;
     let out_port = io::get_midi_out_device(&mut midi_out)?;
     let in_port = io::get_midi_in_device(&mut midi_in)?;
     let mut out_conn = io::get_midi_out_connection(midi_out, &out_port);
@@ -24,7 +22,7 @@ fn main() -> anyhow::Result<()> {
         green: 0,
         white: 125,
     };
-    let mut color = Color(22, LedAnimation::Pulsing(colors::AnimationSpeed::q2));
+    let mut color = Color(22, LedAnimation::None);
     let colored_control_msg = ColorMessage {
         color: color,
         control: ColoredControl::Button(PushButton::LowerRow(controls::TrackIndex::T1)),
