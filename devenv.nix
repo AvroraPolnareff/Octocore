@@ -10,10 +10,10 @@ in
   languages.rust = {
     enable = true;
     channel = "stable";
-    version = "latest";
+    version = "1.95.0";
     components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" ];
   };
-  packages = [ 
+  packages = [
     pkgs.alsa-lib
     pkgs.freetype
     pkgs.fontconfig
